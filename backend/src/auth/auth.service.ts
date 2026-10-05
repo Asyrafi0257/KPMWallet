@@ -14,14 +14,32 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  async checkNric(nric: string) {
+  async checkLogin(nric: string, role: string) {
     const user = await this.userRepository.findOne({
-      where: { nric },
+      where: { 
+        nric,
+        role
+       },
     });
 
+    if (!user) {
     return {
-      exists: !!user,
+      success: false,
+      message: 'NRIC and Role not found',
     };
+  }
+
+  if (user.role !== role) {
+    return {
+      success: false,
+      message: 'Role does not match',
+    };
+  }
+
+  return {
+    success: true,
+    role: user.role,
+  };
   }
 
   async sendRegistrationCode(email: string) {

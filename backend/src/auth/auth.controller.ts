@@ -8,9 +8,11 @@ export class AuthController {
     private readonly authService: AuthService,
   ) {}
 
-  @Post('check-nric')
-  checkNric(@Body('nric') nric: string) {
-    return this.authService.checkNric(nric);
+  @Post('check-login')
+  checkLogin(
+    @Body('nric') nric: string, 
+    @Body('role') role: string) {
+    return this.authService.checkLogin(nric, role);
   }
 
   @Post('send-code')
