@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ShiftModule } from './shift/shift.module';
 
 @Module({
   imports: [
@@ -23,7 +24,9 @@ import { ConfigModule } from '@nestjs/config';
       synchronize: true,
     }),
     AuthModule, 
-    UsersModule],
+    UsersModule, 
+    ShiftModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
