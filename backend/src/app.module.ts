@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ShiftModule } from './shift/shift.module';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { ShiftModule } from './shift/shift.module';
     }),
     AuthModule, 
     UsersModule, 
-    ShiftModule
+    ShiftModule, 
+    TransactionModule
   ],
   controllers: [AppController],
   providers: [AppService],
