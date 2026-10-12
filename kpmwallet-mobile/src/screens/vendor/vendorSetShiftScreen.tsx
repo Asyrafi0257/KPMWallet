@@ -135,7 +135,7 @@ export default function VendorSetShiftScreen() {
                     start_shift: startShift ? `${startShift}:00`: null,
                     end_shift: endShift ? `${endShift}:00`: null,
                     starting_cash: Number(startingCash),
-                    shift_status: !shiftStarted,
+                    shift_status: "OPEN",
                 });
             
                 const result = response.data;

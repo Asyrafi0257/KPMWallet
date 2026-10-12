@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Shift } from './shift.entity';
+import { IsNull } from 'typeorm';
 
 
 @Injectable()
@@ -17,7 +18,6 @@ export class ShiftService {
     start_shift: string;
     end_shift: string;
     starting_cash: number;
-    shift_status: boolean;
   }) {
     const shift = this.shiftRepository.create({
       user: { user_id: data.user_id },
@@ -25,7 +25,7 @@ export class ShiftService {
       start_shift: data.start_shift,
       end_shift: data.end_shift,
       starting_cash: data.starting_cash,
-      shift_status: data.shift_status,
+      shift_status: 'OPEN',
       
     });
   
@@ -39,4 +39,24 @@ export class ShiftService {
   // console.log('Generated ID:', savedShift.shift_id);
   return savedShift;
   }
+
+  //kita nak ambil current shift
+  
+
+async getCurrentShift() {
+    const shift = await this.shiftRepository.findOne({
+        where: {
+            shift_status: 'OPEN',
+        },
+        order: {
+            shift_id: 'DESC',
+        },
+    });
+
+    console.log('Current shift query result:', shift);
+
+    return shift;
+}
+
+
 }

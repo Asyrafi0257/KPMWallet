@@ -32,6 +32,10 @@ export class Shift {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     starting_cash: number;
 
-    @Column({ default: false })
-    shift_status: boolean;
+    @Column({
+        type: 'enum',
+        enum: ['OPEN', 'CLOSED'],
+        default: 'OPEN',
+    })
+    shift_status: 'OPEN' | 'CLOSED';
 }

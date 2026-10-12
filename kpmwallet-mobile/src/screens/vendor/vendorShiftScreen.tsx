@@ -1,11 +1,12 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Button } from "../../components";
-import { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { VendorStackParamList } from "../../navigation/vendorNavigator";
+import api from "../../services/api";
 
 type NavigationProp = NativeStackNavigationProp<
     VendorStackParamList,
@@ -20,16 +21,183 @@ type ShiftHistory = {
     duration: string;
     status: string;
 };
+type ShiftRecord = {
+    shift_id: number;
+    date: string;
+    start_shift: string;
+    end_shift: string | null;
+    starting_cash: number;
+    shift_status: string;
+};
+
+type ShiftResponse = {
+    currentShift: ShiftRecord | null;
+    history: ShiftRecord[];
+};
+
+//kita nak kira duration from startshift to end shift
+const getDuration = (start: string, end: string) => {
+  const [startHour, startMinute] = start
+    .slice(0, 5)
+    .split(":")
+    .map(Number);
+
+  const [endHour, endMinute] = end
+    .slice(0, 5)
+    .split(":")
+    .map(Number);
+
+  let totalMinutes =
+    endHour * 60 +
+    endMinute -
+    (startHour * 60 + startMinute);
+
+  // Support shift yang tamat selepas tengah malam
+  if (totalMinutes < 0) {
+    totalMinutes += 24 * 60;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
+};
+
+//kita nak buat progress track
+
+const getShiftProgress = (
+  start: string,
+  end: string,
+  now = new Date()
+) => {
+  const [startHour, startMinute] = start
+    .slice(0, 5)
+    .split(":")
+    .map(Number);
+
+  const [endHour, endMinute] = end
+    .slice(0, 5)
+    .split(":")
+    .map(Number);
+
+  const startMinutes = startHour * 60 + startMinute;
+  let endMinutes = endHour * 60 + endMinute;
+
+  // Support shift yang tamat selepas tengah malam
+  if (endMinutes <= startMinutes) {
+    endMinutes += 24 * 60;
+  }
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let elapsedMinutes = nowMinutes - startMinutes;
+
+  if (endMinutes > 24 * 60 && nowMinutes < startMinutes) {
+    elapsedMinutes += 24 * 60;
+  }
+
+  const totalMinutes = endMinutes - startMinutes;
+
+  return Math.max(
+    0,
+    Math.min(100, (elapsedMinutes / totalMinutes) * 100)
+  );
+};
+
+//nk buat untuk date
+
+const formatShiftDate = (date: string) => {
+  const [year, month, day] = date
+    .slice(0, 10)
+    .split("-")
+    .map(Number);
+
+  const shiftDate = new Date(year, month - 1, day);
+
+  return shiftDate.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 
 export default function VendorShiftScreen() {
 
+    const [currentShift, setCurrentShift] = useState<ShiftRecord | null>(null);
     const [history, setHistory] = useState<ShiftHistory[]>([]);
-
     const navigation = useNavigation<NavigationProp>();
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+    const timer = setInterval(() => {
+        setCurrentTime(new Date());
+    }, 60_000);
+
+    return () => clearInterval(timer);
+    }, []);
+
+    
+    const progress = currentShift?.shift_status === "OPEN" && currentShift.start_shift && currentShift.end_shift ? 
+        getShiftProgress( currentShift.start_shift, currentShift.end_shift, currentTime ) : 0;
+
+    
+const isEndingSoon =
+  currentShift?.shift_status === "OPEN" &&
+  currentShift.start_shift &&
+  currentShift.end_shift
+    ? (() => {
+        const [endHour, endMinute] = currentShift.end_shift
+          .slice(0, 5)
+          .split(":")
+          .map(Number);
+
+        const nowMinutes =
+          currentTime.getHours() * 60 +
+          currentTime.getMinutes();
+
+        let endMinutes = endHour * 60 + endMinute;
+
+        // Handle shift yang tamat selepas tengah malam
+        if (endMinutes <= nowMinutes) {
+          endMinutes += 24 * 60;
+        }
+
+        return endMinutes - nowMinutes <= 15 &&
+               endMinutes - nowMinutes > 0;
+      })()
+    : false;
+
 
     const handleStartShift = () => {
         navigation.navigate("ShiftDetails");
     };
+
+useFocusEffect(
+    useCallback(() => {
+        const fetchCurrentShift = async () => {
+            try {
+                const response = await api.get<ShiftRecord | null>(
+                    "/shift/current"
+                );
+
+                console.log("API RESPONSE:", response.data);
+
+                setCurrentShift(response.data ?? null);
+            } catch (error: any) {
+                console.error(
+                    "Failed to fetch current shift:",
+                    error?.response?.data ?? error
+                );
+            }
+        };
+
+        fetchCurrentShift();
+    }, [])
+);
+
+
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -37,7 +205,13 @@ export default function VendorShiftScreen() {
 
                 <View style={styles.containTitle}>
                     <Text style={styles.title}>Shift</Text>
-                    <Text style={styles.dateText}>Friday, 09 Oct 2026</Text>
+                    
+                    <Text style={styles.dateText}>
+                    {currentShift?.date
+                        ? formatShiftDate(String(currentShift.date))
+                        : "No shift date"}
+                    </Text>
+
                 </View>
 
                 {/* Current Shift */}
@@ -49,7 +223,11 @@ export default function VendorShiftScreen() {
                         <View style={styles.statusPill}>
                             <View style={styles.statusDot} />
                             <Text style={styles.statusPillText}>
-                                Active
+                                {currentShift?.shift_status === "OPEN"
+                                    ? "Active"
+                                    : currentShift?.shift_status === "CLOSED"
+                                    ? "Closed"
+                                    : "No Active Shift"}
                             </Text>
                         </View>
                     </View>
@@ -58,30 +236,48 @@ export default function VendorShiftScreen() {
  
                         <View style={styles.timeContain}>
                             <Text style={styles.timeTitle}>Start</Text>
-                            <Text style={styles.time}>08:30</Text>
+                            <Text style={styles.time}>
+                                {currentShift?.start_shift?.slice(0, 5) ?? "--:--"}
+                            </Text>
                         </View>
  
                         <Text style={styles.arrow}>→</Text>
  
                         <View style={[styles.timeContain, styles.timeRight]}>
                             <Text style={styles.timeTitle}>End</Text>
-                            <Text style={styles.time}>18:00</Text>
+                            <Text style={styles.time}>
+                                {currentShift?.end_shift?.slice(0, 5) ?? "--:--"}
+                            </Text>
                         </View>
  
                     </View>
+                    
                     <View style={styles.progressTrack}>
-                        <View
-                            style={[
-                                styles.progressFill,
-                                // { width: `${currentShift.progress * 100}%` }
-                                {width:"50%"},
-                            ]}
-                        />
+                    <View
+                        style={[
+                            styles.progressFill,
+                            {
+                            width: `${progress}%`,
+                            backgroundColor: isEndingSoon
+                                ? "#F04438"
+                                : "#16A34A",
+                            },
+                        ]}
+                    />
                     </View>
- 
-                    <Text style={styles.durationText}>
-                        Duration 1h 0m
-                    </Text>
+
+                    <View style={styles.containDuration}>
+                        <Text style={styles.durationText}>
+                            Duration {" "}{currentShift?.start_shift && currentShift?.end_shift ? 
+                                getDuration( currentShift.start_shift, currentShift.end_shift) : 
+                                "--"}
+                        </Text> 
+
+                        <Text style={styles.progressText}>
+                        {Math.round(progress)}% completed
+                        </Text>
+                    </View>
+                    
  
                     <View style={styles.shiftDivider} />
 
@@ -90,7 +286,7 @@ export default function VendorShiftScreen() {
                             <Text style={styles.timeTitle}>Starting cash</Text>
                             <Text style={styles.cash}>
                                 <Text style={styles.currency}>RM </Text>
-                                200:00
+                                {Number(currentShift?.starting_cash ?? 0).toFixed(2)}
                             </Text>
                         </View>
 
@@ -196,16 +392,17 @@ const styles = StyleSheet.create({
     containTitle: {
         paddingHorizontal: 4,
         paddingTop: 20,
-        paddingBottom: 24,
+        paddingBottom: 10,
     },
      dateText: {
-        fontSize: 13,
+        fontSize: 18,
         color: "#64748B",
         marginBottom: 2,
     },
     title: {
         fontSize: 40,
         fontWeight: "700",
+        marginVertical:10
     },
     shift: {
         backgroundColor: "#0041C2",
@@ -228,7 +425,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     shiftLabel: {
-        fontSize: 13,
+        fontSize: 18,
         color: "#C7D2FE",
     },
     statusPill: {
@@ -263,7 +460,7 @@ const styles = StyleSheet.create({
         alignItems: "flex-end",
     },
     timeTitle: {
-        fontSize: 12,
+        fontSize: 15,
         fontWeight: "600",
         textTransform: "uppercase",
         letterSpacing: 0.5,
@@ -271,7 +468,7 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     time: {
-        fontSize: 34,
+        fontSize: 38,
         fontWeight: "700",
         color: "#FFFFFF",
     },
@@ -292,8 +489,17 @@ const styles = StyleSheet.create({
         borderRadius: 3,
         backgroundColor: "#FFFFFF",
     },
-    durationText: {
+    containDuration:{
+        flexDirection:"row",
+        justifyContent:"space-between"
+    },
+    progressText: {
         fontSize: 12,
+        color: "#64748B",
+        marginTop: 6,
+        },
+    durationText: {
+        fontSize: 15,
         color: "#C7D2FE",
         marginTop: 6,
     },
@@ -305,7 +511,7 @@ const styles = StyleSheet.create({
     },
     containCashButton: {
     flexDirection: "row",
-    justifyContent: "space-around", 
+    justifyContent: "space-between", 
     alignItems: "center",
     marginTop: 16,
 },
@@ -313,12 +519,12 @@ const styles = StyleSheet.create({
         
     },
     cash: {
-        fontSize: 26,
+        fontSize: 30,
         fontWeight: "700",
         color: "#FFFFFF",
     },
     currency: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: "500",
         color: "#C7D2FE",
     },
