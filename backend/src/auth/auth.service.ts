@@ -87,4 +87,21 @@ export class AuthService {
       message: 'Account created successfully',
     };
   }
+  async login(nric: string, role: string, password: string) {
+    const user = await this.userRepository.findOne({
+      where: { nric, role },
+    });
+
+    if (!user) {
+      return { success: false, message: 'NRIC or role not found' };
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return { success: false, message: 'Incorrect password' };
+    }
+
+    return { success: true, role: user.role };
+  }
 }

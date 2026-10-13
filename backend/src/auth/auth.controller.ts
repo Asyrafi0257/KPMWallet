@@ -34,4 +34,13 @@ export class AuthController {
       password,
     );
   }
+
+  @Post('login')
+  login(
+  @Body('nric') nric: string,
+  @Body('role') role: string,
+  @Body('password') password: string,
+) {
+  return this.authService.login(nric, role, password);
+}
 }

@@ -47,12 +47,9 @@ const getDuration = (start: string, end: string) => {
     .split(":")
     .map(Number);
 
-  let totalMinutes =
-    endHour * 60 +
-    endMinute -
-    (startHour * 60 + startMinute);
+  let totalMinutes = endHour * 60 + endMinute - (startHour * 60 + startMinute);
 
-  // Support shift yang tamat selepas tengah malam
+  //dibahagian sini bila time lebih pukul 12 malam then dia jadi negative (-1200) => kita kena betulkan negative tu guna code dibawah
   if (totalMinutes < 0) {
     totalMinutes += 24 * 60;
   }
@@ -60,26 +57,23 @@ const getDuration = (start: string, end: string) => {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
+  //so guna padstart untuk kita nk tambah aksara(no, simbol, huruf) dibahagian depan string
   return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
 };
 
 //kita nak buat progress track
-
-const getShiftProgress = (
-  start: string,
-  end: string,
-  now = new Date()
-) => {
+const getShiftProgress = ( start: string, end: string, now = new Date()) => {
   const [startHour, startMinute] = start
-    .slice(0, 5)
-    .split(":")
-    .map(Number);
+    .slice(0, 5) //kita ambil 5 character daripada data
+    .split(":") //kita pisahkan dia kepada hours dengan minutes
+    .map(Number); // then tukarkan dia kepada number
 
   const [endHour, endMinute] = end
     .slice(0, 5)
     .split(":")
     .map(Number);
 
+  //bahagian sini kita tukarkan waktu kepada minute => untuk memudahkan pengiraan duration
   const startMinutes = startHour * 60 + startMinute;
   let endMinutes = endHour * 60 + endMinute;
 
@@ -88,37 +82,43 @@ const getShiftProgress = (
     endMinutes += 24 * 60;
   }
 
+  //bahagian sini kita nak tukar jam dan hours sekarang kepada minutes untuk mudahkan kita untuk buat operasa tolak
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
+  //so dekat sini kita nk buat berapa minit atau jam dh berlalu dari masa mula shift
   let elapsedMinutes = nowMinutes - startMinutes;
 
   if (endMinutes > 24 * 60 && nowMinutes < startMinutes) {
     elapsedMinutes += 24 * 60;
   }
 
+  //kita nak dapatkan jumlah masa dari start shift ke shift tamat
   const totalMinutes = endMinutes - startMinutes;
 
+  //untuk bahagian sini adalah untuk progress bar
+  //Math.max() => akan ambil nilai paling besar while Math.min() akan ambil nilai paling kecik
   return Math.max(
     0,
-    Math.min(100, (elapsedMinutes / totalMinutes) * 100)
+    Math.min(100, (elapsedMinutes / totalMinutes) * 100) //dkt sini berapa percent yang akan ditunjuk di bahagian progress
   );
 };
 
 //nk buat untuk date
-
 const formatShiftDate = (date: string) => {
   const [year, month, day] = date
     .slice(0, 10)
     .split("-")
     .map(Number);
 
+  //bahagian sini kenapa month kena tolak 1? sbb dalam javascript month mula dari 0
   const shiftDate = new Date(year, month - 1, day);
 
+  //bahagian sini kita nk tukar kan object date kepada teks yang boleh dipaparkan mengikut format tertentu
   return shiftDate.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+    weekday: "long", //full name day
+    day: "2-digit", //ambil 2 digit sahaja 
+    month: "short", //ambil nama month yang pendek like Oct
+    year: "numeric", //mesti dalam bentuk nombor
   });
 };
 
@@ -143,59 +143,54 @@ export default function VendorShiftScreen() {
         getShiftProgress( currentShift.start_shift, currentShift.end_shift, currentTime ) : 0;
 
     
-const isEndingSoon =
-  currentShift?.shift_status === "OPEN" &&
-  currentShift.start_shift &&
-  currentShift.end_shift
-    ? (() => {
-        const [endHour, endMinute] = currentShift.end_shift
-          .slice(0, 5)
-          .split(":")
-          .map(Number);
+    //bahagian sini kita nk handle if masa lagi 15 minit then ia akan tukar warna
+    const isEndingSoon = currentShift?.shift_status === "OPEN" && currentShift.start_shift && currentShift.end_shift ? (
+        () => {
+                const [endHour, endMinute] = currentShift.end_shift
+                .slice(0, 5)
+                .split(":")
+                .map(Number);
 
-        const nowMinutes =
-          currentTime.getHours() * 60 +
-          currentTime.getMinutes();
+                const nowMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
-        let endMinutes = endHour * 60 + endMinute;
+                let endMinutes = endHour * 60 + endMinute;
 
-        // Handle shift yang tamat selepas tengah malam
-        if (endMinutes <= nowMinutes) {
-          endMinutes += 24 * 60;
-        }
+                // Handle shift yang tamat selepas tengah malam
+                if (endMinutes <= nowMinutes) {
+                endMinutes += 24 * 60;
+                }
 
-        return endMinutes - nowMinutes <= 15 &&
-               endMinutes - nowMinutes > 0;
-      })()
-    : false;
+                return endMinutes - nowMinutes <= 15 &&
+                    endMinutes - nowMinutes > 0;
+        })() : false;
 
 
-    const handleStartShift = () => {
-        navigation.navigate("ShiftDetails");
-    };
+            const handleStartShift = () => {
+                navigation.navigate("ShiftDetails");
+            };
 
-useFocusEffect(
-    useCallback(() => {
-        const fetchCurrentShift = async () => {
-            try {
-                const response = await api.get<ShiftRecord | null>(
-                    "/shift/current"
-                );
+        useFocusEffect(
+            useCallback(() => {
+                const fetchCurrentShift = async () => {
+                    try {
+                        const response = await api.get<ShiftRecord | null>(
+                            "/shift/current"
+                        );
 
-                console.log("API RESPONSE:", response.data);
+                        console.log("API RESPONSE:", response.data);
 
-                setCurrentShift(response.data ?? null);
-            } catch (error: any) {
-                console.error(
-                    "Failed to fetch current shift:",
-                    error?.response?.data ?? error
-                );
-            }
-        };
+                        setCurrentShift(response.data ?? null);
+                    } catch (error: any) {
+                        console.error(
+                            "Failed to fetch current shift:",
+                            error?.response?.data ?? error
+                        );
+                    }
+                };
 
-        fetchCurrentShift();
-    }, [])
-);
+                fetchCurrentShift();
+            }, [])
+        );
 
 
 
@@ -473,7 +468,7 @@ const styles = StyleSheet.create({
         color: "#FFFFFF",
     },
     arrow: {
-        fontSize: 22,
+        fontSize: 28,
         color: "#C7D2FE",
         marginHorizontal: 10,
     },

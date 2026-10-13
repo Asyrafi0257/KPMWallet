@@ -40,12 +40,14 @@ export default function VendorSetShiftScreen() {
     // ni untuk animation
     const slideAnim = useState(new Animated.Value(500))[0];
 
+    //function akan dipanggil untuk kita buka modal
     const handleOpenCloseModal = () => {
         setShowCloseModal(true);
         slideAnim.setValue(800);
 
+        //dekat sini kita nak buat animasi tu bergerak dari satu nilai ke satu nilai
         Animated.timing(slideAnim, {
-            toValue: 0,
+            toValue: 0, //nilai akhir
             duration: 400,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
