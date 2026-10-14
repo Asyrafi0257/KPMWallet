@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import api from '../../services/api';
 
 type Props = CompositeScreenProps<
-  NativeStackScreenProps<AuthStackParamList, 'RoleSelect'>,
+  NativeStackScreenProps<AuthStackParamList, 'RoleSelect', "ForgotPassword">,
   NativeStackScreenProps<RootStackParamList>
 >;
 
@@ -114,6 +114,14 @@ export default function RoleSelectScreen({ navigation }: Props) {
   const handleCancel = () => {
     setPassword("");
     setPasswordModal(false);
+  }
+
+  const handleForgotPassword = () => {
+    setPasswordModal(false);
+    navigation.navigate("ForgotPassword", {
+      role: selectedRole,
+      nric: nric.trim(),
+    });
   }
 
   return (
@@ -225,7 +233,7 @@ export default function RoleSelectScreen({ navigation }: Props) {
               </Pressable>
             </View>
 
-            <Pressable onPress={() => {}} style={styles.forgetBtn} hitSlop={8}>
+            <Pressable onPress={handleForgotPassword} style={styles.forgetBtn} hitSlop={8}>
               <Text style={styles.titleForget}>Forgot password?</Text>
             </Pressable>
 

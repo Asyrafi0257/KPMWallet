@@ -35,12 +35,24 @@ export class AuthController {
     );
   }
 
-  @Post('login')
+@Post('login')
   login(
-  @Body('nric') nric: string,
-  @Body('role') role: string,
-  @Body('password') password: string,
+    @Body('nric') nric: string,
+    @Body('role') role: string,
+    @Body('password') password: string,
 ) {
   return this.authService.login(nric, role, password);
 }
+
+@Post('forgot-password')
+  forgotPassword(
+    @Body('nric')
+    nric:string,
+    @Body('role')
+    role:string,
+    @Body("email")
+    email:string
+  ){
+    return this.authService.forgotPassword(nric, role, email);
+  }
 }

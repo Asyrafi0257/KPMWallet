@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoleSelectScreen from '../screens/auth/RoleSelectScreen';
 import FirstTimeEmailScreen from '../screens/auth/FirstTimeEmailScreen';
 import CreatePasswordScreen from '../screens/auth/CreatePasswordScreen';
+import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
+import VerificationScreen from '../screens/auth/VerificationScreen';
 
 export type AuthStackParamList = {
   RoleSelect: undefined;
@@ -18,6 +20,17 @@ export type AuthStackParamList = {
     email: string;
     role: 'School' | 'Parent' | 'Student' | 'Vendor';
   };
+
+  ForgotPassword: {
+    nric:string,
+    role: 'School' | 'Parent' | 'Student' | 'Vendor';
+  }
+
+  Verification:{
+    nric:string,
+    role: 'School' | 'Parent' | 'Student' | 'Vendor';
+    email:string
+  }
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -46,6 +59,16 @@ export default function AuthNavigator() {
       <Stack.Screen
         name="CreatePassword"
         component={CreatePasswordScreen}
+      />
+
+      <Stack.Screen 
+        name="ForgotPassword"
+        component={ForgotPasswordScreen}
+      />
+
+      <Stack.Screen 
+        name="Verification"
+        component={VerificationScreen}
       />
     </Stack.Navigator>
   );
