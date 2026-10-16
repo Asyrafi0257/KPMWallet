@@ -6,30 +6,38 @@ import FirstTimeEmailScreen from '../screens/auth/FirstTimeEmailScreen';
 import CreatePasswordScreen from '../screens/auth/CreatePasswordScreen';
 import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 import VerificationScreen from '../screens/auth/VerificationScreen';
+import ResetPasswordScreen from "../screens/auth/ResetPasswordScreen";
 
 export type AuthStackParamList = {
   RoleSelect: undefined;
 
   FirstTimeEmail: {
-    role: 'School' | 'Parent' | 'Student' | 'Vendor';
+    role: 'School' | 'Parent' | 'Student' | 'Vendor',
     nric: string;
   };
 
   CreatePassword: {
     nric: string;
     email: string;
-    role: 'School' | 'Parent' | 'Student' | 'Vendor';
+    role: 'School' | 'Parent' | 'Student' | 'Vendor',
   };
 
   ForgotPassword: {
     nric:string,
-    role: 'School' | 'Parent' | 'Student' | 'Vendor';
+    role: 'School' | 'Parent' | 'Student' | 'Vendor',
   }
 
   Verification:{
     nric:string,
-    role: 'School' | 'Parent' | 'Student' | 'Vendor';
+    role: 'School' | 'Parent' | 'Student' | 'Vendor',
     email:string
+  }
+
+  ResetPassword: {
+    nric:string,
+    role: 'School' | 'Parent' | 'Student' | 'Vendor',
+    email:string,
+    otp:string
   }
 };
 
@@ -69,6 +77,11 @@ export default function AuthNavigator() {
       <Stack.Screen 
         name="Verification"
         component={VerificationScreen}
+      />
+
+      <Stack.Screen 
+        name="ResetPassword"
+        component={ResetPasswordScreen}
       />
     </Stack.Navigator>
   );

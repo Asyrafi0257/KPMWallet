@@ -43,8 +43,8 @@ const tabConfigs: TabConfig[] = [
     library: 'ion',
   },
   {
-    name: 'Settings',
-    icon: 'settings-outline',
+    name: 'Profile',
+    icon: 'person-outline',
     library: 'ion',
   },
 ];

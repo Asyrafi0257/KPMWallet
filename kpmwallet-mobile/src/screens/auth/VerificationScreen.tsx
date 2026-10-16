@@ -1,11 +1,12 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
+import { View, Text, StyleSheet, Pressable, TextInput, Keyboard, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthStackParamList } from "../../navigation/authNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "../../components";
 import { spacing } from "../../theme";
+import api from "../../services/api";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Verification">;
 
@@ -14,57 +15,177 @@ export default function VeficationScreen({
   route,
 }: Props) {
 
+    const {nric, role, email} = route.params;
+    const [otp, setOtp] = useState("");
+    const [loading, setLoading] = useState(false);
     // 1. Set masa countdown kepada 5 minit (300 saat)
   const [timeLeft, setTimeLeft] = useState(300);
 
   // 2. Countdown setiap saat
   useEffect(() => {
-    if (timeLeft <= 0) return;
+  if (timeLeft <= 0) return;
 
-    const timer = setInterval(() => {
-      setTimeLeft((previous) => previous - 1);
-    }, 1000);
+  const timer = setInterval(() => {
+    setTimeLeft((previous) => Math.max(previous - 1, 0));
+  }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft]);
+  return () => clearInterval(timer);
+}, [timeLeft]);
 
   // 3. Tukar saat kepada minit dan saat
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
+
+  //logic handleVerify
+  
+const handleVerify = async () => {
+  if (otp.length !== 6) {
+    Alert.alert("Error", "Please enter the 6-digit OTP.");
+    return;
+  }
+
+  if (timeLeft <= 0) {
+    Alert.alert("OTP Expired", "Please request a new OTP.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const response = await api.post(
+      "/auth/verify-reset-otp",
+      {
+        nric,
+        role,
+        email,
+        otp,
+      },
+    );
+
+    if (response.data.success) {
+    Alert.alert(
+        "Success",
+        "OTP verified successfully!",
+        [
+        {
+            text: "Continue",
+            onPress: () => {
+            navigation.navigate("ResetPassword", {
+                nric,
+                role,
+                email,
+                otp,
+            });
+            },
+        },
+        ],
+    );
+}
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ??
+      "Unable to verify OTP. Please try again.";
+
+    Alert.alert(
+      "Verification Failed",
+      Array.isArray(message) ? message.join(", ") : message,
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+    //handle resend code
+    const handleResendCode = async () => {
+  if (timeLeft > 0) return;
+
+  try {
+    const response = await api.post('/auth/forgot-password', {
+      nric,
+      role,
+      email,
+    });
+
+    if (!response.data.success) {
+      Alert.alert(
+        'Error',
+        response.data.message ?? 'Failed to resend OTP.',
+      );
+      return;
+    }
+
+    setOtp('');
+    setTimeLeft(300);
+
+    Alert.alert(
+      'Success',
+      'A new OTP has been sent to your email.',
+    );
+  } catch (error: any) {
+    const message = error.response?.data?.message
+      ?? 'Failed to resend OTP. Please try again.';
+
+    Alert.alert(
+      'Error',
+      Array.isArray(message) ? message.join(', ') : message,
+    );
+  }
+};
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                            <Pressable
-                                onPress={() => navigation.goBack()}
-                                    style={({ pressed }) => [
-                                        styles.backButton,
-                                            pressed && styles.backButtonPressed,
-                                        ]}
-                                    >
-                                        <Ionicons name="arrow-back" size={30} color="#000000" />
-                                    </Pressable>
-                            <Text style={styles.titleForgot}>Verification</Text>
-                            <Text style={styles.paraghForgot}>We've sent OTP to your email. Please enter 6 digits code your receive.</Text>
-                        </View>
+                <Pressable
+                    onPress={() => navigation.goBack()}
+                    style={({ pressed }) => [
+                        styles.backButton,
+                        pressed && styles.backButtonPressed,
+                        ]}
+                >
+                    <Ionicons name="arrow-back" size={30} color="#000000" />
+                </Pressable>
+                <Text style={styles.titleForgot}>Verification</Text>
+                <Text style={styles.paraghForgot}>We've sent OTP to your {email}. Please enter 6 digits code your receive.</Text>
+            </View>
 
             {/* body untuk user masukkan otp  */}
             <View style={styles.containerOtp}>
                 <View style={styles.containOtp}>
-                    {[1, 2, 3, 4, 5, 6].map((item) => (
-                        <TextInput
-                            key={item}
-                            style={styles.otpInput}
-                            keyboardType="number-pad"
-                            maxLength={1}
-                            textAlign="center"
-                        />
-                        ))}
+                    
+                {[0, 1, 2, 3, 4, 5].map((index) => (
+                <TextInput
+                    key={index}
+                    style={styles.otpInput}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    textAlign="center"
+                    value={otp[index] ?? ""}
+                    onChangeText={(value) => {
+                        const digit = value.replace(/\D/g, "").slice(-1);
+
+                        setOtp((previous) => {
+                            const digits = previous.split("");
+                            digits[index] = digit;
+
+                            const newOtp = digits.join("").slice(0, 6);
+
+                            if (newOtp.length === 6) {
+                            Keyboard.dismiss();
+                            }
+
+                            return newOtp;
+                        });
+                        }}
+                />
+                ))}
+
                 </View>
 
                 <View style={styles.containBottom}>
-                    <Button 
-                        title="Verify"
-                        onPress={()=>{}}
+                    <Button
+                    title={loading ? "Verifying..." : "Verify"}
+                    onPress={handleVerify}
+                    disabled={loading || timeLeft <= 0}
                     />
                     {/* Countdown OTP */}
                         <Text style={styles.countdown}>
@@ -74,7 +195,7 @@ export default function VeficationScreen({
                         </Text>
                     <View style={styles.containReceive}>
                        <Text>Didn't you receive any code?</Text>
-                        <Pressable onPress={()=> {}} style={styles.receiveBtn} hitSlop={8}>
+                        <Pressable onPress={handleResendCode} style={styles.receiveBtn} hitSlop={8}>
                             <Text style={styles.titleReceive}>Receive code</Text>
                         </Pressable> 
                     </View>

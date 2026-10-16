@@ -6,8 +6,10 @@ import VendorTransactionScreen from '../screens/vendor/vendorTransactionScreen';
 import TabBar from '../components/tabBar';
 import VendorItemScreen from '../screens/vendor/vendorItemScreen';
 import VendorShiftScreen from '../screens/vendor/vendorShiftScreen';
-import VendorSettingScreen from '../screens/vendor/vendorSettingScreen';
+import VendorProfileScreen from '../screens/vendor/vendorProfileScreen';
 import VendorSetShiftScreen from '../screens/vendor/vendorSetShiftScreen';
+import VendorEditProfile from '../screens/vendor/vendorEditProfile';
+import VendorChangePassword from "../screens/vendor/vendorChangePassword";
 
 
 const Tab = createBottomTabNavigator();
@@ -16,6 +18,8 @@ const Stack = createNativeStackNavigator();
 export type VendorStackParamList = {
     VendorTabs: undefined;
     ShiftDetails: undefined;
+    EditProfile: undefined;
+    ChangePassword: undefined;
 };
 
 function VendorTabs() {
@@ -30,7 +34,7 @@ function VendorTabs() {
             <Tab.Screen name="Transaction" component={VendorTransactionScreen} />
             <Tab.Screen name="Item" component={VendorItemScreen} />
             <Tab.Screen name="Shift" component={VendorShiftScreen} />
-            <Tab.Screen name="Settings" component={VendorSettingScreen} />
+            <Tab.Screen name="Profile" component={VendorProfileScreen} />
         </Tab.Navigator>
     );
 }
@@ -47,6 +51,16 @@ export default function VendorNavigator() {
             <Stack.Screen
                 name="ShiftDetails"
                 component={VendorSetShiftScreen}
+            />
+
+            <Stack.Screen 
+                name="EditProfile"
+                component={VendorEditProfile}
+            />
+
+            <Stack.Screen 
+                name="ChangePassword"
+                component={VendorChangePassword}
             />
 
         </Stack.Navigator>
