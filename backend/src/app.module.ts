@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ShiftModule } from './shift/shift.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { ItemsModule } from './items/items.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { TransactionModule } from './transaction/transaction.module';
     AuthModule, 
     UsersModule, 
     ShiftModule, 
-    TransactionModule
+    TransactionModule,
+    ItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

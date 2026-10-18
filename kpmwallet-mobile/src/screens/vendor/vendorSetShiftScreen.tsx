@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, Pressable, TextInput, Modal, Platform, ScrollView,  Animated, Easing, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, TextInput, Modal, Platform, ScrollView, Animated, Easing, Alert, Keyboard, KeyboardAvoidingView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "../../components";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import api from "../../services/api";
 
@@ -13,16 +13,32 @@ const formatDate = (d: Date) => {
     return `${dd}/${mm}/${d.getFullYear()}`;
 };
 
+type ShiftCloseSummary = {
+    hasActiveShift: boolean;
+    starting_cash: number;
+    summary: {
+        total_sales: number;
+        transaction_count: number;
+        cash_total: number;
+        qr_total: number;
+        expected_cash: number;
+    };
+};
+
 export default function VendorSetShiftScreen() {
     const [shiftStarted, setShiftStarted] = useState(false);
+    const [activeShift, setActiveShift] = useState<any>(null);
     const [showCloseModal, setShowCloseModal] = useState(false);
     const [closingCash, setClosingCash] = useState("");
+    const [closingShift, setClosingShift] = useState(false);
+    const [summaryLoading, setSummaryLoading] = useState(false);
+    const [closeSummary, setCloseSummary] = useState<ShiftCloseSummary | null>(null);
     const [shiftDate, setShiftDate] = useState<Date | null>(null);
     const [tempShiftDate, setTempShiftDate] = useState<Date>(new Date()); //bahagian sini date sementara yang user pilih
     const [dateText, setDateText] = useState("");
     const [dateError, setDateError] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const [startingCash, setStartingCash] = useState("");
 
     //ni untuk usestate bahagian timepicker
@@ -40,9 +56,26 @@ export default function VendorSetShiftScreen() {
     // ni untuk animation
     const slideAnim = useState(new Animated.Value(500))[0];
 
+    useEffect(() => {
+        let mounted = true;
+        api.get("/shift/current").then(({ data }) => {
+            if (mounted) {
+                const isOpen = data?.shift_status === "OPEN";
+                setActiveShift(isOpen ? data : null);
+                setShiftStarted(isOpen);
+            }
+        }).catch((error) => {
+            console.error("Failed to load current shift:", error?.response?.data ?? error);
+        });
+        return () => { mounted = false; };
+    }, []);
+
     //function akan dipanggil untuk kita buka modal
-    const handleOpenCloseModal = () => {
+    const handleOpenCloseModal = async () => {
         setShowCloseModal(true);
+        setSummaryLoading(true);
+        setClosingCash("");
+        setCloseSummary(null);
         slideAnim.setValue(800);
 
         //dekat sini kita nak buat animasi tu bergerak dari satu nilai ke satu nilai
@@ -52,6 +85,27 @@ export default function VendorSetShiftScreen() {
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
         }).start();
+
+        try {
+            const { data } = await api.get<ShiftCloseSummary>("/transaction/current-shift");
+            if (!data.hasActiveShift) {
+                setShowCloseModal(false);
+                setActiveShift(null);
+                setShiftStarted(false);
+                Alert.alert("No active shift", "Set a new shift before recording sales.");
+                return;
+            }
+            setCloseSummary(data);
+        } catch (error: any) {
+            setShowCloseModal(false);
+            const message = error?.response?.data?.message;
+            Alert.alert(
+                "Unable to load shift totals",
+                Array.isArray(message) ? message.join("\n") : message || "Please try again."
+            );
+        } finally {
+            setSummaryLoading(false);
+        }
     };
 
     const formatDateForDB = (date: Date) => {
@@ -130,7 +184,6 @@ export default function VendorSetShiftScreen() {
                 } 
 
                 //bahagian sini if form semua diisi
-                setShiftStarted(true);
                 const response = await api.post("/shift", {
                     user_id: 1,
                     date: formatDateForDB(shiftDate),
@@ -143,6 +196,7 @@ export default function VendorSetShiftScreen() {
                 const result = response.data;
                 if (result.shift_id) {
                     //bila user dh enter data then kita kosongkan terus form
+                    setActiveShift(result);
                     setShiftStarted(true);
                     setDateText("");
                     setStartShift(null);
@@ -152,7 +206,8 @@ export default function VendorSetShiftScreen() {
                     //bila user dh berjaya create then display message to user
                     Alert.alert(
                         "Success",
-                        `Your shift has started. Shift ID: ${result.shift_id}`
+                        `Your shift has started. Shift ID: ${result.shift_id}`,
+                        [{ text: "OK", onPress: () => navigation.goBack() }]
                     );
                 } else {
                     Alert.alert(
@@ -164,21 +219,68 @@ export default function VendorSetShiftScreen() {
             } else {
                 handleOpenCloseModal();
             }
-        }catch (error) {
-            //console.error("Start shift error:", error);
-
+        }catch (error: any) {
+            const message = error?.response?.data?.message;
+            if (error?.response?.status === 409) {
+                try {
+                    const { data } = await api.get("/shift/current");
+                    if (data?.shift_status === "OPEN") {
+                        setActiveShift(data);
+                        setShiftStarted(true);
+                    }
+                } catch (refreshError) {
+                    console.error("Failed to refresh shift after start conflict:", refreshError);
+                }
+            }
             Alert.alert(
                 "Unable to Start Shift",
-                "Internal server problem. Please try again."
+                Array.isArray(message)
+                    ? message.join("\n")
+                    : message ?? (error?.response
+                        ? `Request failed (${error.response.status}). Please try again.`
+                        : "Cannot reach the server. Check your connection and try again.")
             );
         }
     };
 
-    const handleConfirmClose = () => {
-        //simpan closingCash
-        setShowCloseModal(false);
-        setClosingCash("");
-        setShiftStarted(false);         
+    const startingCashTotal = Number(closeSummary?.starting_cash ?? activeShift?.starting_cash ?? 0);
+    const cashSalesTotal = Number(closeSummary?.summary.cash_total ?? 0);
+    const qrSalesTotal = Number(closeSummary?.summary.qr_total ?? 0);
+    const totalSales = Number(closeSummary?.summary.total_sales ?? 0);
+    const expectedCash = Number(closeSummary?.summary.expected_cash ?? startingCashTotal + cashSalesTotal);
+    const enteredClosingCash = closingCash.trim() ? Number(closingCash) : 0;
+    const safeClosingCash = Number.isFinite(enteredClosingCash) ? enteredClosingCash : 0;
+    const discrepancy = Math.round((safeClosingCash - expectedCash) * 100) / 100;
+    const transactionCount = Number(closeSummary?.summary.transaction_count ?? 0);
+
+    const formatAmount = (amount: number) => `RM ${Number(amount).toFixed(2)}`;
+
+    const handleConfirmClose = async () => {
+        const amount = Number(closingCash);
+        if (!closingCash.trim() || !Number.isFinite(amount) || amount < 0) {
+            Alert.alert("Invalid closing cash", "Enter a valid cash amount to end the shift.");
+            return;
+        }
+
+        setClosingShift(true);
+        try {
+            await api.patch("/shift/current/end", { closing_cash: amount });
+            setShowCloseModal(false);
+            setClosingCash("");
+            setActiveShift(null);
+            setShiftStarted(false);
+            setShiftDate(null);
+            setDateText("");
+            setDateError(false);
+            setStartShift(null);
+            setEndShift(null);
+            setStartingCash("");
+        } catch (error: any) {
+            const message = error?.response?.data?.message;
+            Alert.alert("Unable to end shift", Array.isArray(message) ? message.join("\n") : message || "Please try again.");
+        } finally {
+            setClosingShift(false);
+        }
     };
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -221,6 +323,7 @@ export default function VendorSetShiftScreen() {
 
                 {/* Body: start, end, cash dan button */}
                 <View style={styles.bodyShift}>
+                    <View style={shiftStarted ? styles.hidden : undefined}>
                     <Text style={styles.label}>Shift Date</Text>
                 <View
                     style={[
@@ -624,6 +727,28 @@ export default function VendorSetShiftScreen() {
                         </Pressable>
                     ))}
                 </View>
+                    </View>
+
+                    {shiftStarted && activeShift && (
+                        <View style={styles.activeShiftCard}>
+                            <Text style={styles.activeShiftHeading}>Active shift</Text>
+                            <Text style={styles.activeShiftDate}>
+                                {(() => {
+                                    const [year, month, day] = String(activeShift.date).slice(0, 10).split("-").map(Number);
+                                    return new Date(year, month - 1, day).toLocaleDateString("en-GB", {
+                                        weekday: "long", day: "2-digit", month: "short", year: "numeric",
+                                    });
+                                })()}
+                            </Text>
+                            <View style={styles.activeShiftTimes}>
+                                <Text style={styles.activeShiftDetail}>Start  {activeShift.start_shift?.slice(0, 5) ?? "--:--"}</Text>
+                                <Text style={styles.activeShiftDetail}>End  {activeShift.end_shift?.slice(0, 5) ?? "--:--"}</Text>
+                            </View>
+                            <Text style={styles.activeShiftDetail}>
+                                Starting cash  RM {Number(activeShift.starting_cash ?? 0).toFixed(2)}
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.containButton}>
                         <Pressable
@@ -635,7 +760,7 @@ export default function VendorSetShiftScreen() {
                             ]}
                         >
                             <Text style={styles.mainButtonText}>
-                                {shiftStarted ? "Close Shift" : "Start Shift"}
+                                {shiftStarted ? "End Shift" : "Start Shift"}
                             </Text>
                         </Pressable>
                     </View>
@@ -655,17 +780,38 @@ export default function VendorSetShiftScreen() {
                 visible={showCloseModal}
                 transparent
                 animationType="none"
-                onRequestClose={() => setShowCloseModal(false)}
+                onRequestClose={() => {
+                    Keyboard.dismiss();
+                    setShowCloseModal(false);
+                }}
             >
-                <View style={styles.modalOverlay}>
-                    <Animated.View
-                        style={[
-                            styles.modalCard,
-                            {
-                                transform: [{ translateY: slideAnim }],
-                            },
-                        ]}
-                    >
+                <KeyboardAvoidingView
+                    style={styles.modalAvoidingView}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                >
+                    <View style={styles.modalOverlay}>
+                        <Pressable
+                            style={StyleSheet.absoluteFill}
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                setShowCloseModal(false);
+                            }}
+                            accessibilityRole="button"
+                            accessibilityLabel="Cancel end shift"
+                        />
+                        <Animated.View
+                            style={[
+                                styles.modalCard,
+                                {
+                                    transform: [{ translateY: slideAnim }],
+                                },
+                            ]}
+                        >
+                          <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.modalContent}
+                          >
 
                         <View style={styles.modalIcon}>
                             <Ionicons name="cash-outline" size={30} color="#4F46E5" />
@@ -673,32 +819,86 @@ export default function VendorSetShiftScreen() {
 
                         <Text style={styles.modalTitle}>Close Cash</Text>
                         <Text style={styles.modalDesc}>
-                            Count the cash in your register and enter the exact amount.
+                            Enter the cash counted in your register. Sales totals are for this shift.
                         </Text>
 
-                        <View style={styles.modalField}>
-                            <Text style={styles.currency}>RM</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={closingCash}
-                                onChangeText={setClosingCash}
-                                placeholder="0.00"
-                                placeholderTextColor="#94A3B8"
-                                keyboardType="numeric"
-                            />
+                        <View style={styles.summaryCard}>
+                            {summaryLoading && !closeSummary ? (
+                                <Text style={styles.summaryLoading}>Loading shift totals...</Text>
+                            ) : (
+                                <>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Starting Cash</Text>
+                                        <Text style={styles.summaryValue}>{formatAmount(startingCashTotal)}</Text>
+                                    </View>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Cash Sales</Text>
+                                        <Text style={styles.summaryValue}>{formatAmount(cashSalesTotal)}</Text>
+                                    </View>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>QR Sales</Text>
+                                        <Text style={styles.summaryValue}>{formatAmount(qrSalesTotal)}</Text>
+                                    </View>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Total Sales</Text>
+                                        <Text style={styles.summaryValue}>{formatAmount(totalSales)}</Text>
+                                    </View>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Expected Cash</Text>
+                                        <Text style={styles.summaryValue}>{formatAmount(expectedCash)}</Text>
+                                    </View>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Closing Cash</Text>
+                                        <View style={styles.summaryInput}>
+                                            <Text style={styles.summaryInputPrefix}>RM</Text>
+                                            <TextInput
+                                                style={styles.summaryInputValue}
+                                                value={closingCash}
+                                                onChangeText={setClosingCash}
+                                                placeholder="0.00"
+                                                placeholderTextColor="#94A3B8"
+                                                keyboardType="decimal-pad"
+                                                returnKeyType="done"
+                                                onSubmitEditing={() => Keyboard.dismiss()}
+                                            />
+                                        </View>
+                                    </View>
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Discrepancy</Text>
+                                        <Text style={[
+                                            styles.summaryValue,
+                                            discrepancy === 0 ? styles.discrepancyEven : styles.discrepancyMismatch,
+                                        ]}>
+                                            {discrepancy < 0 ? "-" : ""}{formatAmount(Math.abs(discrepancy))}
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.summaryRow, styles.summaryLastRow]}>
+                                        <Text style={styles.summaryLabel}>Transactions</Text>
+                                        <Text style={styles.summaryValue}>{transactionCount}</Text>
+                                    </View>
+                                </>
+                            )}
                         </View>
 
-                        <Button title="Confirm Close Shift" onPress={handleConfirmClose} />
+                        <Button
+                            title={closingShift ? "Ending Shift..." : summaryLoading ? "Loading totals..." : "Confirm End Shift"}
+                            onPress={handleConfirmClose}
+                            disabled={closingShift || summaryLoading || !closeSummary}
+                        />
 
                         <Pressable
-                            onPress={() => setShowCloseModal(false)}
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                setShowCloseModal(false);
+                            }}
                             style={styles.cancelButton}
                         >
                             <Text style={styles.cancelText}>Cancel</Text>
                         </Pressable>
-
-                    </Animated.View>
-                </View>
+                          </ScrollView>
+                        </Animated.View>
+                    </View>
+                </KeyboardAvoidingView>
             </Modal>
         </SafeAreaView>
     );
@@ -830,6 +1030,38 @@ const styles = StyleSheet.create({
         // Android Shadow
         elevation: 4,
     },
+    hidden: {
+        display: "none",
+    },
+    activeShiftCard: {
+        padding: 18,
+        marginBottom: 18,
+        backgroundColor: "#F0FDF4",
+        borderWidth: 1,
+        borderColor: "#BBF7D0",
+        borderRadius: 16,
+    },
+    activeShiftHeading: {
+        fontSize: 16,
+        fontWeight: "800",
+        color: "#166534",
+        marginBottom: 6,
+    },
+    activeShiftDate: {
+        fontSize: 14,
+        color: "#334155",
+        marginBottom: 12,
+    },
+    activeShiftTimes: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 10,
+    },
+    activeShiftDetail: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#334155",
+    },
     fieldActive: {
     borderColor: "#6366F1",
     backgroundColor: "#EEF2FF",
@@ -954,14 +1186,21 @@ modalOverlay: {
     backgroundColor: "rgba(30,27,75,0.55)",
     justifyContent: "flex-end",
 },
+modalAvoidingView: {
+    flex: 1,
+},
 
 modalCard: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    minHeight: "40%",
-    padding: 24,
-    paddingBottom: 35,
+    maxHeight: "92%",
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 12,
+},
+modalContent: {
+    paddingBottom: 24,
 },
 modalIcon: {
     alignSelf: "center",
@@ -987,16 +1226,72 @@ modalDesc: {
     marginTop: 6,
     marginBottom: 20,
 },
-modalField: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 56,
+summaryCard: {
     paddingHorizontal: 14,
     marginBottom: 18,
-    backgroundColor: "#F8FAFF",
-    borderWidth: 1.5,
-    borderColor: "#E0E7FF",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E7EAF0",
     borderRadius: 14,
+},
+summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 38,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E7EAF0",
+},
+summaryLastRow: {
+    borderBottomWidth: 0,
+},
+summaryLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: "#64748B",
+},
+summaryValue: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "right",
+},
+summaryInput: {
+    width: 126,
+    height: 32,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+},
+summaryInputPrefix: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#64748B",
+    marginRight: 4,
+},
+summaryInputValue: {
+    flex: 1,
+    paddingVertical: 0,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+    textAlign: "right",
+},
+summaryLoading: {
+    paddingVertical: 18,
+    fontSize: 13,
+    color: "#64748B",
+    textAlign: "center",
+},
+discrepancyEven: {
+    color: "#15803D",
+},
+discrepancyMismatch: {
+    color: "#DC2626",
 },
 cancelButton: {
     alignItems: "center",

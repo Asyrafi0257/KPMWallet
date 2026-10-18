@@ -5,6 +5,8 @@ import { User } from '../users/user.entity';
 import { EmailService } from '../email/email.service';
 import { OtpVerification } from "../auth/otp-verification.entity";
 import * as bcrypt from 'bcrypt';
+import { UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 
 @Injectable()
@@ -17,6 +19,8 @@ export class AuthService {
     private otpRepository: Repository<OtpVerification>,
 
     private emailService: EmailService,
+
+     private readonly jwtService: JwtService,
   ) {}
 
   async checkLogin(nric: string, role: string) {
@@ -92,23 +96,57 @@ export class AuthService {
       message: 'Account created successfully',
     };
   }
-  async login(nric: string, role: string, password: string) {
-    const user = await this.userRepository.findOne({
-      where: { nric, role },
-    });
+  
+async login(nric: string, role: string, password: string) {
+  const user = await this.userRepository.findOne({
+    where: { nric, role },
+  });
 
-    if (!user) {
-      return { success: false, message: 'NRIC or role not found' };
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return { success: false, message: 'Incorrect password' };
-    }
-
-    return { success: true, role: user.role };
+  if (!user) {
+    throw new UnauthorizedException(
+      'Invalid NRIC, role, or password',
+    );
   }
+
+  const isMatch = await bcrypt.compare(
+    password,
+    user.password,
+  );
+
+  if (!isMatch) {
+    throw new UnauthorizedException(
+      'Invalid NRIC, role, or password',
+    );
+  }
+
+  // Generate JWT payload
+  const payload = {
+    sub: user.user_id,
+    role: user.role,
+  };
+
+  // Sign JWT token
+  const accessToken = await this.jwtService.signAsync(
+    payload,
+  );
+
+  // Return token and safe user information
+  return {
+    success: true,
+    message: 'Login successful',
+    access_token: accessToken,
+    token_type: 'Bearer',
+    expires_in: 900,
+    user: {
+      user_id: user.user_id,
+      nric: user.nric,
+      email: user.email,
+      role: user.role,
+      username: user.username,
+    },
+  };
+}
+
 
   
 

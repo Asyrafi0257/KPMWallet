@@ -32,6 +32,12 @@ export class Shift {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     starting_cash: number;
 
+    @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+    closing_cash: number | null;
+
+    @Column({ type: 'datetime', nullable: true })
+    closed_at: Date | null;
+
     @Column({
         type: 'enum',
         enum: ['OPEN', 'CLOSED'],

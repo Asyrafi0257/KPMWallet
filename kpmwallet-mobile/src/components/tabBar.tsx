@@ -54,7 +54,6 @@ export default function TabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
-
   const renderIcon = (
     tab: TabConfig,
     color: string,
@@ -163,7 +162,6 @@ export default function TabBar({
 
   return (
     <View style={styles.bottomWrapper}>
-
       <View style={styles.bottomBar}>
 
          {tabConfigs.map((tab) => {

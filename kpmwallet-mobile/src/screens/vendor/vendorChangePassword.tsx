@@ -57,11 +57,8 @@ export default function ChangePasswordScreen() {
     try {
       setLoading(true);
 
-      // TODO: Replace this with the authenticated user's actual ID.
-      const userId = 1;
-
       const response = await api.patch(
-        `/users/${userId}/change-password`,
+        '/users/me/change-password',
         {
             newPassword,
         }

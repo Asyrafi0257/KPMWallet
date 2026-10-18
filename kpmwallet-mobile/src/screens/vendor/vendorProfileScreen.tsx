@@ -8,9 +8,13 @@ import {
   ScrollView,
   useWindowDimensions,
   ActivityIndicator,
+  Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../../i18n';
 import api from '../../services/api';
 import { Button } from '../../components';
@@ -135,6 +139,7 @@ export default function Screen() {
   const circleSmallSize = Math.min(width * 0.42, 160);
 
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const navigation = useNavigation<NavigationProp>();
@@ -146,10 +151,14 @@ export default function Screen() {
 
       const fetchProfile = async () => {
         try {
-          const response = await api.get('/users/1');
+          const response = await api.get('/users/me');
+          const savedImage = await AsyncStorage.getItem(
+            `profile_image_uri_${response.data.user_id}`,
+          );
 
           if (isActive) {
             setUser(response.data);
+            setProfileImage(savedImage);
           }
         } catch (error) {
           console.log('Failed to fetch profile:', error);
@@ -174,11 +183,17 @@ export default function Screen() {
   }
 
   // Handle logout
-  const handleLogout = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Auth' as never }],
-    });
+  const handleLogout = async () => {
+    try {
+      await SecureStore.deleteItemAsync('access_token');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as never }],
+      });
+    } catch (error) {
+      console.log('Failed to clear access token:', error);
+      Alert.alert('Logout failed', 'Unable to log out. Please try again.');
+    }
   };
 
   // Handle edit profile
@@ -263,26 +278,42 @@ export default function Screen() {
                 { marginTop: -avatarSize / 2 },
               ]}
             >
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    width: avatarSize,
-                    height: avatarSize,
-                    borderRadius: avatarSize / 2,
-                    borderWidth: Math.max(3, width * 0.012),
-                  },
-                ]}
-              >
-                <Text
+              {profileImage ? (
+                <Image
+                  source={{ uri: profileImage }}
+                  resizeMode="cover"
                   style={[
-                    styles.avatarText,
-                    { fontSize: avatarSize * 0.46 },
+                    styles.avatar,
+                    {
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: avatarSize / 2,
+                      borderWidth: Math.max(3, width * 0.012),
+                    },
+                  ]}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.avatar,
+                    {
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: avatarSize / 2,
+                      borderWidth: Math.max(3, width * 0.012),
+                    },
                   ]}
                 >
-                  {(user.username?.trim()?.charAt(0) || 'A').toUpperCase()}
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      { fontSize: avatarSize * 0.46 },
+                    ]}
+                  >
+                    {(user.username?.trim()?.charAt(0) || 'A').toUpperCase()}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Username */}

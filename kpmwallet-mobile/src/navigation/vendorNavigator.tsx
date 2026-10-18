@@ -10,6 +10,7 @@ import VendorProfileScreen from '../screens/vendor/vendorProfileScreen';
 import VendorSetShiftScreen from '../screens/vendor/vendorSetShiftScreen';
 import VendorEditProfile from '../screens/vendor/vendorEditProfile';
 import VendorChangePassword from "../screens/vendor/vendorChangePassword";
+import VendorCheckoutScreen from '../screens/vendor/vendorCheckoutScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -20,6 +21,9 @@ export type VendorStackParamList = {
     ShiftDetails: undefined;
     EditProfile: undefined;
     ChangePassword: undefined;
+    Checkout: {
+        cartItems: Array<{ id: string; name: string; price: number; quantity: number }>;
+    };
 };
 
 function VendorTabs() {
@@ -61,6 +65,11 @@ export default function VendorNavigator() {
             <Stack.Screen 
                 name="ChangePassword"
                 component={VendorChangePassword}
+            />
+
+            <Stack.Screen
+                name="Checkout"
+                component={VendorCheckoutScreen}
             />
 
         </Stack.Navigator>

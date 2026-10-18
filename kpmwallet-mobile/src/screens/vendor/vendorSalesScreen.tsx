@@ -1,68 +1,59 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import api from '../../services/api';
 
 type PaymentType = 'Cash' | 'QR';
 
 type Transaction = {
-  id: string;
+  transaction_id: number;
+  transaction_code: string;
   amount: number;
-  paymentType: PaymentType;
-  status: string;
-  date: string;
-  time: string;
+  payment: PaymentType;
+  created_at: string;
+  items: Array<{ name: string; quantity: number }>;
 };
 
-const transactions: Transaction[] = [
-  {
-    id: 'TXN-SPEND-MT02QSRS',
-    amount: 25.0,
-    paymentType: 'Cash',
-    status: 'Successful',
-    date: '17 Oct 2026',
-    time: '10:30 AM',
-  },
-  {
-    id: 'TXN-SPEND-MT02QST2',
-    amount: 12.5,
-    paymentType: 'QR',
-    status: 'Successful',
-    date: '17 Oct 2026',
-    time: '10:15 AM',
-  },
-  {
-    id: 'TXN-SPEND-MT02QST8',
-    amount: 8.0,
-    paymentType: 'Cash',
-    status: 'Successful',
-    date: '17 Oct 2026',
-    time: '09:45 AM',
-  },
-  {
-    id: 'TXN-SPEND-MT02QSU4',
-    amount: 15.0,
-    paymentType: 'QR',
-    status: 'Successful',
-    date: '17 Oct 2026',
-    time: '09:20 AM',
-  },
-];
+type CurrentShiftSales = {
+  hasActiveShift: boolean;
+  summary: { total_sales: number; transaction_count: number; cash_total: number; qr_total: number };
+  transactions: Transaction[];
+};
 
 export default function SalesScreen() {
-  // Demo sahaja: false = tiada active shift
-  const [hasActiveShift, setHasActiveShift] = useState(false);
+  const [sales, setSales] = useState<CurrentShiftSales | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleRefresh = () => {
-    // Nanti sambungkan dengan API backend.
-    console.log('Refresh sales');
-  };
+  const loadSales = useCallback(async (showPageLoading = true) => {
+    try {
+      setError('');
+      if (showPageLoading) setLoading(true);
+      const response = await api.get<CurrentShiftSales>('/transaction/current-shift');
+      setSales(response.data);
+    } catch (requestError) {
+      console.log('Failed to load current shift sales:', requestError);
+      setError('Unable to load sales. Please try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
+    void loadSales();
+  }, [loadSales]));
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -70,7 +61,21 @@ export default function SalesScreen() {
         {/* Page Title */}
         <Text style={styles.pageTitle}>Sales</Text>
 
-        {hasActiveShift ? (
+        {loading && !sales ? (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={styles.emptyMessage}>Loading sales...</Text>
+          </View>
+        ) : error && !sales ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="cloud-offline-outline" size={52} color="#94A3B8" />
+            <Text style={styles.emptyTitle}>Sales unavailable</Text>
+            <Text style={styles.emptyMessage}>{error}</Text>
+            <Pressable style={styles.refreshButton} onPress={() => { setLoading(true); void loadSales(); }}>
+              <Text style={styles.refreshText}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : sales?.hasActiveShift ? (
           <>
             {/* Current Sales Header */}
             <View style={styles.sectionHeader}>
@@ -80,21 +85,26 @@ export default function SalesScreen() {
 
               <Pressable
                 style={styles.refreshButton}
-                onPress={handleRefresh}
+                disabled={refreshing}
+                onPress={() => {
+                  if (refreshing) return;
+                  setRefreshing(true);
+                  void loadSales(false);
+                }}
               >
-                <Ionicons
-                  name="refresh-outline"
-                  size={18}
-                  color="#4F46E5"
-                />
+                {refreshing ? (
+                  <ActivityIndicator size="small" color="#4F46E5" />
+                ) : (
+                  <Ionicons name="refresh-outline" size={18} color="#4F46E5" />
+                )}
 
                 <Text style={styles.refreshText}>
-                  Refresh
+                  {refreshing ? 'Refreshing...' : 'Refresh'}
                 </Text>
               </Pressable>
             </View>
 
-            <ActiveShiftSales />
+            <ActiveShiftSales sales={sales} />
           </>
         ) : (
           /* No Active Shift */
@@ -119,19 +129,9 @@ export default function SalesScreen() {
   );
 }
 
-function ActiveShiftSales() {
-  const totalSales = transactions.reduce(
-    (total, transaction) => total + transaction.amount,
-    0,
-  );
-
-  const cashSales = transactions
-    .filter((transaction) => transaction.paymentType === 'Cash')
-    .reduce((total, transaction) => total + transaction.amount, 0);
-
-  const qrSales = transactions
-    .filter((transaction) => transaction.paymentType === 'QR')
-    .reduce((total, transaction) => total + transaction.amount, 0);
+function ActiveShiftSales({ sales }: { sales: CurrentShiftSales }) {
+  const { total_sales: totalSales, transaction_count: transactionCount, cash_total: cashSales, qr_total: qrSales } = sales.summary;
+  const transactions = sales.transactions;
 
   return (
     <ScrollView
@@ -170,7 +170,7 @@ function ActiveShiftSales() {
           </View>
 
           <Text style={styles.cardAmount}>
-            {transactions.length}
+            {transactionCount}
           </Text>
         </View>
 
@@ -217,14 +217,14 @@ function ActiveShiftSales() {
 
         <View style={styles.transactionCountBadge}>
           <Text style={styles.transactionCountText}>
-            {transactions.length} Transactions
+            {transactionCount} Transactions
           </Text>
         </View>
       </View>
 
       {/* Transaction List */}
       {transactions.map((transaction) => (
-        <View key={transaction.id} style={styles.transactionItem}>
+        <View key={transaction.transaction_id} style={styles.transactionItem}>
           {/* Left Side */}
           <View style={styles.transactionLeft}>
             <Text style={styles.transactionAmount}>
@@ -234,22 +234,26 @@ function ActiveShiftSales() {
             <View style={styles.paymentRow}>
               <Ionicons
                 name={
-                  transaction.paymentType === 'Cash'
+                  transaction.payment === 'Cash'
                     ? 'cash-outline'
                     : 'qr-code-outline'
                 }
                 size={16}
                 color={
-                  transaction.paymentType === 'Cash'
+                  transaction.payment === 'Cash'
                     ? '#16A34A'
                     : '#7C3AED'
                 }
               />
 
               <Text style={styles.paymentType}>
-                {transaction.paymentType}
+                {transaction.payment}
               </Text>
             </View>
+
+            <Text style={styles.purchasedItems} numberOfLines={2}>
+              {transaction.items.map((item) => `${item.name} × ${item.quantity}`).join(' · ')}
+            </Text>
 
             <View style={styles.successBadge}>
               <Ionicons
@@ -259,7 +263,7 @@ function ActiveShiftSales() {
               />
 
               <Text style={styles.successText}>
-                {transaction.status}
+              Successful
               </Text>
             </View>
           </View>
@@ -270,15 +274,11 @@ function ActiveShiftSales() {
               style={styles.transactionId}
               numberOfLines={1}
             >
-              {transaction.id}
-            </Text>
-
-            <Text style={styles.transactionDate}>
-              {transaction.date}
+              {transaction.transaction_code}
             </Text>
 
             <Text style={styles.transactionTime}>
-              {transaction.time}
+              {new Date(transaction.created_at).toLocaleString('en-MY')}
             </Text>
           </View>
         </View>
@@ -487,6 +487,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#475569',
+  },
+
+  purchasedItems: {
+    marginBottom: 8,
+    color: '#64748B',
+    fontSize: 11,
+    lineHeight: 16,
   },
 
   successBadge: {

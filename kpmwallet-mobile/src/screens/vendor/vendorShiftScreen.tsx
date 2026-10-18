@@ -28,11 +28,8 @@ type ShiftRecord = {
     end_shift: string | null;
     starting_cash: number;
     shift_status: string;
-};
-
-type ShiftResponse = {
-    currentShift: ShiftRecord | null;
-    history: ShiftRecord[];
+    closed_at?: string | null;
+    closing_cash?: number | string | null;
 };
 
 //kita nak kira duration from startshift to end shift
@@ -139,8 +136,9 @@ export default function VendorShiftScreen() {
     }, []);
 
     
-    const progress = currentShift?.shift_status === "OPEN" && currentShift.start_shift && currentShift.end_shift ? 
-        getShiftProgress( currentShift.start_shift, currentShift.end_shift, currentTime ) : 0;
+    const progress = currentShift?.shift_status === "OPEN" && currentShift.start_shift && currentShift.end_shift
+        ? getShiftProgress(currentShift.start_shift, currentShift.end_shift, currentTime)
+        : 0;
 
     
     //bahagian sini kita nk handle if masa lagi 15 minit then ia akan tukar warna
@@ -172,23 +170,49 @@ export default function VendorShiftScreen() {
         useFocusEffect(
             useCallback(() => {
                 const fetchCurrentShift = async () => {
-                    try {
-                        const response = await api.get<ShiftRecord | null>(
-                            "/shift/current"
-                        );
+                    const [currentResult, historyResult] = await Promise.allSettled([
+                        api.get<ShiftRecord | null>("/shift/current"),
+                        api.get<ShiftRecord[]>("/shift/history"),
+                    ]);
 
-                        console.log("API RESPONSE:", response.data);
-
-                        setCurrentShift(response.data ?? null);
-                    } catch (error: any) {
+                    if (currentResult.status === "fulfilled") {
+                        const latestShift = currentResult.value.data;
+                        setCurrentShift(latestShift?.shift_status === "OPEN" ? latestShift : null);
+                    } else {
                         console.error(
                             "Failed to fetch current shift:",
-                            error?.response?.data ?? error
+                            currentResult.reason?.response?.data ?? currentResult.reason
+                        );
+                    }
+
+                    if (historyResult.status === "fulfilled") {
+                        const historyRecords = historyResult.value.data ?? [];
+                        setHistory(historyRecords.map((record) => {
+                            const endTime = record.closed_at
+                                ? new Date(record.closed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+                                : record.end_shift?.slice(0, 5) ?? "--:--";
+                            return {
+                                id: String(record.shift_id),
+                                date: formatShiftDate(String(record.date)),
+                                start: record.start_shift?.slice(0, 5) ?? "--:--",
+                                end: endTime,
+                                duration: record.start_shift && endTime !== "--:--"
+                                    ? getDuration(record.start_shift, endTime)
+                                    : "--",
+                                status: "Ended",
+                            };
+                        }));
+                    } else {
+                        console.error(
+                            "Failed to fetch shift history:",
+                            historyResult.reason?.response?.data ?? historyResult.reason
                         );
                     }
                 };
 
-                fetchCurrentShift();
+                void fetchCurrentShift();
+                const timer = setInterval(() => void fetchCurrentShift(), 5000);
+                return () => clearInterval(timer);
             }, [])
         );
 
@@ -220,8 +244,6 @@ export default function VendorShiftScreen() {
                             <Text style={styles.statusPillText}>
                                 {currentShift?.shift_status === "OPEN"
                                     ? "Active"
-                                    : currentShift?.shift_status === "CLOSED"
-                                    ? "Closed"
                                     : "No Active Shift"}
                             </Text>
                         </View>
@@ -263,9 +285,9 @@ export default function VendorShiftScreen() {
 
                     <View style={styles.containDuration}>
                         <Text style={styles.durationText}>
-                            Duration {" "}{currentShift?.start_shift && currentShift?.end_shift ? 
-                                getDuration( currentShift.start_shift, currentShift.end_shift) : 
-                                "--"}
+                            Duration {" "}{currentShift?.start_shift && currentShift?.end_shift
+                                ? getDuration(currentShift.start_shift, currentShift.end_shift)
+                                : "--"}
                         </Text> 
 
                         <Text style={styles.progressText}>

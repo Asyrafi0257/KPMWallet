@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
 import api from '../../services/api';
@@ -51,12 +52,14 @@ export default function EditProfileScreen() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Tukar ID ini kepada user ID sebenar selepas auth tersedia.
-        const response = await api.get('/users/1');
+        const response = await api.get('/users/me');
 
         const data: UserProfile = response.data;
 
+        const savedImage = await AsyncStorage.getItem(`profile_image_uri_${data.user_id}`);
+
         setUser(data);
+        setProfileImage(savedImage);
         setEmail(data.email ?? '');
         setUsername(data.username ?? '');
         setNric(data.nric ?? '');
@@ -130,23 +133,20 @@ export default function EditProfileScreen() {
     try {
       setSaving(true);
 
-      const response = await api.put(`/users/${user.user_id}`, {
+      const response = await api.put('/users/me', {
         email: email.trim(),
         username: username.trim(),
         nric: nric.replace(/-/g, '').trim(),
       });
 
-      setUser((previous) =>
-        previous
-          ? {
-              ...previous,
-              ...response.data,
-              email: email.trim(),
-              username: username.trim(),
-              nric: nric.replace(/-/g, '').trim(),
-            }
-          : previous,
-      );
+      const updatedUser: UserProfile = response.data.user;
+      if (profileImage) {
+        await AsyncStorage.setItem(`profile_image_uri_${updatedUser.user_id}`, profileImage);
+      }
+      setUser(updatedUser);
+      setEmail(updatedUser.email ?? '');
+      setUsername(updatedUser.username ?? '');
+      setNric(updatedUser.nric ?? '');
 
       Alert.alert('Success', 'Your profile has been updated.', [
         {
