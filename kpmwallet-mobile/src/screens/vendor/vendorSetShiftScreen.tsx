@@ -1,4 +1,7 @@
-import { View, Text, StyleSheet, Pressable, TextInput, Modal, Platform, ScrollView, Animated, Easing, Alert, Keyboard, KeyboardAvoidingView } from "react-native";
+import { View, StyleSheet, Pressable, Modal, Platform, ScrollView, Animated, Easing, Keyboard, KeyboardAvoidingView } from "react-native";
+import { LocalizedTextInput as TextInput } from '../../components/LocalizedTextInput';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
@@ -52,7 +55,7 @@ export default function VendorSetShiftScreen() {
     //dekat sini kita sedia kan list hours dan minutes
     const hours = Array.from({ length: 24 }, (_, i) => i);
     const minutes = Array.from({ length: 60 }, (_, i) => i);
-    
+
     // ni untuk animation
     const slideAnim = useState(new Animated.Value(500))[0];
 
@@ -181,7 +184,7 @@ export default function VendorSetShiftScreen() {
                         "Please fill in all fields"
                     )
                     return
-                } 
+                }
 
                 //bahagian sini if form semua diisi
                 const response = await api.post("/shift", {
@@ -192,7 +195,7 @@ export default function VendorSetShiftScreen() {
                     starting_cash: Number(startingCash),
                     shift_status: "OPEN",
                 });
-            
+
                 const result = response.data;
                 if (result.shift_id) {
                     //bila user dh enter data then kita kosongkan terus form
@@ -202,7 +205,7 @@ export default function VendorSetShiftScreen() {
                     setStartShift(null);
                     setEndShift(null);
                     setStartingCash("");
-                    
+
                     //bila user dh berjaya create then display message to user
                     Alert.alert(
                         "Success",
@@ -284,7 +287,7 @@ export default function VendorSetShiftScreen() {
     };
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.container} 
+            <ScrollView style={styles.container}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
@@ -332,7 +335,7 @@ export default function VendorSetShiftScreen() {
                         dateError && styles.fieldError,
                     ]}
                 >
-                    
+
                 <Pressable
                     onPress={() => {
                         setTempShiftDate(shiftDate ?? new Date());
@@ -361,7 +364,7 @@ export default function VendorSetShiftScreen() {
 
                 {dateError && <Text style={styles.errorText}>Enter a valid date</Text>}
 
-                {/* so dekat sini date popup bila user tekan */}          
+                {/* so dekat sini date popup bila user tekan */}
                 <Modal
                     visible={showDatePicker}
                     transparent
@@ -400,7 +403,7 @@ export default function VendorSetShiftScreen() {
                                         Done
                                     </Text>
                                 </Pressable>
-                                
+
                                 <Pressable
                                     style={styles.dateCancelButton}
                                     onPress={() => {
@@ -673,7 +676,7 @@ export default function VendorSetShiftScreen() {
                                 }}
                             >
                                 <Text style={styles.dateDoneText}>
-                                    Confirm 
+                                    Confirm
                                 </Text>
                             </Pressable>
 
@@ -928,7 +931,7 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         borderBottomLeftRadius: 36,
         borderBottomRightRadius: 36,
-        backgroundColor: "#4F46E5",
+        backgroundColor: "#0041C2",
 
         // iOS Shadow
         shadowColor: "#312E81",
@@ -1135,7 +1138,7 @@ errorText: {
         backgroundColor: "#EEF2FF",
         borderRadius: 999,
     },
-    
+
     // Quick cash chips
     chipRow: {
         flexDirection: "row",
@@ -1305,12 +1308,12 @@ cancelText: {
 mainButton: {
     height: 52,
     borderRadius: 14,
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#0041C2",
     justifyContent: "center",
     alignItems: "center",
 },
 mainButtonClose: {
-    backgroundColor: "#DC2626", 
+    backgroundColor: "#DC2626",
 },
 mainButtonPressed: {
     opacity: 0.85,

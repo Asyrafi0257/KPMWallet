@@ -1,17 +1,18 @@
 
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import React, { useState } from 'react';
 import {
   View,
-  Text,
+
   StyleSheet,
   Pressable,
-  Alert,
   Animated,
   Modal,
   Easing,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { CompositeScreenProps } from '@react-navigation/native';
@@ -321,8 +322,8 @@ export default function RoleSelectScreen({ navigation }: Props) {
                 <Ionicons
                   name={
                     showPassword
-                      ? 'eye-off-outline'
-                      : 'eye-outline'
+                      ? 'eye-outline'
+                      : 'eye-off-outline'
                   }
                   size={22}
                   color={colors.gray500}

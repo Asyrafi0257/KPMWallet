@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { LocalizedText as Text } from '../../components/LocalizedText';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radii, spacing, typography } from '../../theme';
 import { Button, Input } from '../../components';
@@ -15,6 +18,8 @@ export default function CreatePasswordScreen({
 }: Props) {
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const { nric, email, role } = route.params;
 
@@ -23,7 +28,6 @@ export default function CreatePasswordScreen({
     Alert.alert('Error', 'Passwords do not match.');
     return;
   }
-
   try {
     const response = await api.post('/auth/create-password', {
       nric,
@@ -77,23 +81,47 @@ export default function CreatePasswordScreen({
           <Text style={styles.title}>Create your password</Text>
           <Text style={styles.subtitle}>Set a secure password to protect your account.</Text>
 
-          <Input
-            label="Password"
-            placeholder="Enter password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            containerStyle={styles.input}
-          />
+          <View style={styles.passwordField}>
+            <Input
+              label="Password"
+              placeholder="Enter password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              inputStyle={styles.passwordInput}
+              containerStyle={styles.input}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              onPress={() => setShowPassword((visible) => !visible)}
+              style={styles.eyeButton}
+              hitSlop={8}
+            >
+              <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.gray500} />
+            </Pressable>
+          </View>
 
-          <Input
-            label="Confirm password"
-            placeholder="Confirm password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            containerStyle={styles.input}
-          />
+          <View style={styles.passwordField}>
+            <Input
+              label="Confirm password"
+              placeholder="Confirm password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+              inputStyle={styles.passwordInput}
+              containerStyle={styles.input}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={showConfirmPassword ? 'Hide password' : 'Show password'}
+              onPress={() => setShowConfirmPassword((visible) => !visible)}
+              style={styles.eyeButton}
+              hitSlop={8}
+            >
+              <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.gray500} />
+            </Pressable>
+          </View>
 
           {password !== confirmPassword && confirmPassword.length > 0 && (
             <Text style={styles.error}>Passwords do not match.</Text>
@@ -168,6 +196,19 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: spacing.lg,
+  },
+  passwordField: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 48,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: spacing.md,
+    top: 34,
+    height: 40,
+    justifyContent: 'center',
   },
   error: {
     ...typography.caption,

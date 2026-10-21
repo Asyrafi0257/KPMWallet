@@ -1,4 +1,5 @@
 
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import React, { useState } from "react";
 import {
   SafeAreaView,
@@ -8,10 +9,10 @@ import {
   View,
   StyleSheet,
   Pressable,
-  Text,
-  Alert,
+
   ActivityIndicator,
 } from "react-native";
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Input } from "../../components";
@@ -142,7 +143,7 @@ export default function ChangePasswordScreen() {
               hitSlop={8}
             >
               <Ionicons
-                name={showNewPassword ? "eye-off-outline" : "eye-outline"}
+                name={showNewPassword ? "eye-outline" : "eye-off-outline"}
                 size={22}
                 color={colors.gray500}
               />
@@ -172,8 +173,8 @@ export default function ChangePasswordScreen() {
               <Ionicons
                 name={
                   showConfirmPassword
-                    ? "eye-off-outline"
-                    : "eye-outline"
+                    ? "eye-outline"
+                    : "eye-off-outline"
                 }
                 size={22}
                 color={colors.gray500}

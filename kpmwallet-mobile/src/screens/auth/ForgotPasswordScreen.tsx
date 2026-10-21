@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, Alert } from "react-native";
+import { LocalizedText as Text } from '../../components/LocalizedText';
+import { View, StyleSheet, Pressable } from "react-native";
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import type { AuthStackParamList } from "../../navigation/authNavigator";
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from "@expo/vector-icons";
@@ -20,7 +22,7 @@ export default function ForgotPasswordScreen ({
     const [email, setEmail] = useState("");
 
 
-    
+
 const handleContinue = async () => {
   if (!email.trim()) {
     Alert.alert("Error", "Please enter your email.");
@@ -55,9 +57,9 @@ const handleContinue = async () => {
           text: "OK",
           onPress: () => {
             navigation.navigate("Verification", {
-              nric: result.nric,
-              role: result.role,
-              email: result.email,
+              nric,
+              role,
+              email: email.trim(),
             });
           },
         },
@@ -92,7 +94,7 @@ const handleContinue = async () => {
 
             {/* bahagian sini body untuk contain forgot password */}
             <View style={styles.contain}>
-                <Input 
+                <Input
                     label="Email"
                     placeholder="Enter your Email"
                     value={email}
@@ -103,7 +105,7 @@ const handleContinue = async () => {
                 <Button
                     title="Continue"
                     onPress={handleContinue}
-                />    
+                />
             </View>
         </SafeAreaView>
     );

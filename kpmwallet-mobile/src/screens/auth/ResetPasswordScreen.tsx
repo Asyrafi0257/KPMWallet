@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../navigation/authNavigator";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, StyleSheet, Pressable, Text, Alert } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { Ionicons } from "@expo/vector-icons";
 import { Button, Input } from "../../components";
 import { colors, radii, spacing, typography } from '../../theme';
@@ -20,9 +22,10 @@ export default function VeficationScreen({
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    
+
 const handleResetPassword = async () => {
   // 1. Semak password kosong
   if (!newPassword || !confirmPassword) {
@@ -122,7 +125,7 @@ const handleResetPassword = async () => {
                             placeholder="Enter your password"
                             value={newPassword}
                             onChangeText={setNewPassword}
-                            secureTextEntry={showPassword}
+                            secureTextEntry={!showPassword}
                             autoCapitalize="none"
                             containerStyle={styles.inputPass}
                         />
@@ -132,7 +135,7 @@ const handleResetPassword = async () => {
                             hitSlop={8}
                         >
                         <Ionicons
-                            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                             size={22}
                             color={colors.gray500}
                         />
@@ -146,17 +149,17 @@ const handleResetPassword = async () => {
                             placeholder="Enter your confirm password"
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
-                           secureTextEntry={!showPassword}
+                           secureTextEntry={!showConfirmPassword}
                             autoCapitalize="none"
                             containerStyle={styles.inputPass}
                         />
                         <Pressable
-                            onPress={() => setShowPassword(prev => !prev)}
+                            onPress={() => setShowConfirmPassword(prev => !prev)}
                             style={styles.eyeBtn}
                             hitSlop={8}
                         >
                         <Ionicons
-                            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                            name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
                             size={22}
                             color={colors.gray500}
                         />

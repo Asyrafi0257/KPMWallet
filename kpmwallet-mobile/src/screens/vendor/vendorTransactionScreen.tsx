@@ -1,20 +1,22 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import {
   ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
+
+
   View,
 } from "react-native";
+import { LocalizedTextInput as TextInput } from '../../components/LocalizedTextInput';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import api from "../../services/api";
 
-type Period = "today" | "week" | "month";
+type Period = "today" | "week" | "month" | "all";
 type SalesRecord = {
   shift_id: number;
   date: string;
@@ -52,6 +54,7 @@ const periods: Array<{ key: Period; label: string }> = [
   { key: "today", label: "Today" },
   { key: "week", label: "This Week" },
   { key: "month", label: "This Month" },
+  { key: "all", label: "All" },
 ];
 const money = (value: number) => `RM ${Number(value ?? 0).toFixed(2)}`;
 
@@ -68,7 +71,8 @@ const formatClosedTime = (record: ClosedShift) => record.closed_at
   : record.end_shift?.slice(0, 5) ?? "--:--";
 
 export default function VendorTransactionScreen() {
-  const [period, setPeriod] = useState<Period>("today");
+  const navigation = useNavigation();
+  const [period, setPeriod] = useState<Period>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [records, setRecords] = useState<ClosedShift[]>([]);
@@ -81,6 +85,8 @@ export default function VendorTransactionScreen() {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => navigation.addListener("focus", () => setPeriod("all")), [navigation]);
 
   const loadRecords = useCallback(async () => {
     try {
@@ -193,7 +199,8 @@ export default function VendorTransactionScreen() {
                   <View style={styles.closedDetailsRow}>
                     <Text style={styles.closedTime}>Ended at {formatClosedTime(record)}</Text>
                     <Pressable style={styles.detailButton} onPress={() => setSelectedRecord(record)}>
-                      <Text style={styles.detailButtonText}>Details&gt;&gt;</Text>
+                      <Text style={styles.detailButtonText}>Details</Text>
+                      <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
                     </Pressable>
                   </View>
                 {record.transactions.length > 0 && (
@@ -299,7 +306,7 @@ function DetailRow({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#EEF2FF" },
+  safeArea: { flex: 1, backgroundColor: "#FFFFFF" },
   container: { flex: 1, paddingHorizontal: 16 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 12, paddingBottom: 14 },
   title: { fontSize: 27, fontWeight: "800", color: "#1E1B4B" },
@@ -326,7 +333,7 @@ const styles = StyleSheet.create({
   closedBadgeText: { fontSize: 10, fontWeight: "700", color: "#475569" },
   closedDetailsRow: { minHeight: 38, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 9, marginBottom: 10 },
   closedTime: { flex: 1, fontSize: 11, color: "#64748B" },
-  detailButton: { minHeight: 34, alignItems: "center", justifyContent: "center", marginLeft: 10, paddingHorizontal: 13, borderRadius: 9, backgroundColor: "#4F46E5" },
+  detailButton: { minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, marginLeft: 10, paddingHorizontal: 13, borderRadius: 11, backgroundColor: "#4F46E5" },
   detailButtonText: { fontSize: 12, fontWeight: "700", color: "#FFFFFF" },
   transactionsHeading: { marginBottom: 4, fontSize: 12, fontWeight: "800", color: "#64748B" },
   transactionRow: { minHeight: 44, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },

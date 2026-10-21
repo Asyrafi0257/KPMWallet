@@ -1,6 +1,9 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, TextInput, Keyboard, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Keyboard } from "react-native";
+import { LocalizedTextInput as TextInput } from '../../components/LocalizedTextInput';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthStackParamList } from "../../navigation/authNavigator";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,7 +40,7 @@ export default function VeficationScreen({
   const seconds = timeLeft % 60;
 
   //logic handleVerify
-  
+
 const handleVerify = async () => {
   if (otp.length !== 6) {
     Alert.alert("Error", "Please enter the 6-digit OTP.");
@@ -151,7 +154,7 @@ const handleVerify = async () => {
             {/* body untuk user masukkan otp  */}
             <View style={styles.containerOtp}>
                 <View style={styles.containOtp}>
-                    
+
                 {[0, 1, 2, 3, 4, 5].map((index) => (
                 <TextInput
                     key={index}
@@ -197,13 +200,13 @@ const handleVerify = async () => {
                        <Text>Didn't you receive any code?</Text>
                         <Pressable onPress={handleResendCode} style={styles.receiveBtn} hitSlop={8}>
                             <Text style={styles.titleReceive}>Receive code</Text>
-                        </Pressable> 
+                        </Pressable>
                     </View>
-                    
+
                 </View>
-                
+
             </View>
-            
+
         </SafeAreaView>
     )
 }

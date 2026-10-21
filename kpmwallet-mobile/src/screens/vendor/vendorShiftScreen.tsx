@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { VendorStackParamList } from "../../navigation/vendorNavigator";
 import api from "../../services/api";
@@ -18,7 +20,6 @@ type ShiftHistory = {
     date: string;
     start: string;
     end: string;
-    duration: string;
     status: string;
 };
 type ShiftRecord = {
@@ -33,7 +34,7 @@ type ShiftRecord = {
 };
 
 //kita nak kira duration from startshift to end shift
-const getDuration = (start: string, end: string) => {
+const getDuration = (start: string, end: string, language = 'en') => {
   const [startHour, startMinute] = start
     .slice(0, 5)
     .split(":")
@@ -55,7 +56,9 @@ const getDuration = (start: string, end: string) => {
   const minutes = totalMinutes % 60;
 
   //so guna padstart untuk kita nk tambah aksara(no, simbol, huruf) dibahagian depan string
-  return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
+  const hourUnit = language === 'ms' ? 'jam' : 'h';
+  const minuteUnit = language === 'ms' ? 'minit' : 'm';
+  return `${String(hours).padStart(2, "0")} ${hourUnit} ${String(minutes).padStart(2, "0")} ${minuteUnit}`;
 };
 
 //kita nak buat progress track
@@ -101,7 +104,7 @@ const getShiftProgress = ( start: string, end: string, now = new Date()) => {
 };
 
 //nk buat untuk date
-const formatShiftDate = (date: string) => {
+const formatShiftDate = (date: string, language: string) => {
   const [year, month, day] = date
     .slice(0, 10)
     .split("-")
@@ -111,9 +114,9 @@ const formatShiftDate = (date: string) => {
   const shiftDate = new Date(year, month - 1, day);
 
   //bahagian sini kita nk tukar kan object date kepada teks yang boleh dipaparkan mengikut format tertentu
-  return shiftDate.toLocaleDateString("en-GB", {
+  return shiftDate.toLocaleDateString(language === 'ms' ? 'ms-MY' : 'en-GB', {
     weekday: "long", //full name day
-    day: "2-digit", //ambil 2 digit sahaja 
+    day: "2-digit", //ambil 2 digit sahaja
     month: "short", //ambil nama month yang pendek like Oct
     year: "numeric", //mesti dalam bentuk nombor
   });
@@ -121,6 +124,7 @@ const formatShiftDate = (date: string) => {
 
 
 export default function VendorShiftScreen() {
+    const { i18n } = useTranslation();
 
     const [currentShift, setCurrentShift] = useState<ShiftRecord | null>(null);
     const [history, setHistory] = useState<ShiftHistory[]>([]);
@@ -135,12 +139,12 @@ export default function VendorShiftScreen() {
     return () => clearInterval(timer);
     }, []);
 
-    
+
     const progress = currentShift?.shift_status === "OPEN" && currentShift.start_shift && currentShift.end_shift
         ? getShiftProgress(currentShift.start_shift, currentShift.end_shift, currentTime)
         : 0;
 
-    
+
     //bahagian sini kita nk handle if masa lagi 15 minit then ia akan tukar warna
     const isEndingSoon = currentShift?.shift_status === "OPEN" && currentShift.start_shift && currentShift.end_shift ? (
         () => {
@@ -193,12 +197,9 @@ export default function VendorShiftScreen() {
                                 : record.end_shift?.slice(0, 5) ?? "--:--";
                             return {
                                 id: String(record.shift_id),
-                                date: formatShiftDate(String(record.date)),
+                                date: String(record.date),
                                 start: record.start_shift?.slice(0, 5) ?? "--:--",
                                 end: endTime,
-                                duration: record.start_shift && endTime !== "--:--"
-                                    ? getDuration(record.start_shift, endTime)
-                                    : "--",
                                 status: "Ended",
                             };
                         }));
@@ -224,10 +225,10 @@ export default function VendorShiftScreen() {
 
                 <View style={styles.containTitle}>
                     <Text style={styles.title}>Shift</Text>
-                    
+
                     <Text style={styles.dateText}>
                     {currentShift?.date
-                        ? formatShiftDate(String(currentShift.date))
+                        ? formatShiftDate(String(currentShift.date), i18n.language)
                         : "No shift date"}
                     </Text>
 
@@ -238,7 +239,7 @@ export default function VendorShiftScreen() {
 
                     <View style={styles.shiftHeader}>
                         <Text style={styles.shiftLabel}>Current shift</Text>
- 
+
                         <View style={styles.statusPill}>
                             <View style={styles.statusDot} />
                             <Text style={styles.statusPillText}>
@@ -250,25 +251,25 @@ export default function VendorShiftScreen() {
                     </View>
 
                     <View style={styles.containShift}>
- 
+
                         <View style={styles.timeContain}>
                             <Text style={styles.timeTitle}>Start</Text>
                             <Text style={styles.time}>
                                 {currentShift?.start_shift?.slice(0, 5) ?? "--:--"}
                             </Text>
                         </View>
- 
+
                         <Text style={styles.arrow}>→</Text>
- 
+
                         <View style={[styles.timeContain, styles.timeRight]}>
                             <Text style={styles.timeTitle}>End</Text>
                             <Text style={styles.time}>
                                 {currentShift?.end_shift?.slice(0, 5) ?? "--:--"}
                             </Text>
                         </View>
- 
+
                     </View>
-                    
+
                     <View style={styles.progressTrack}>
                     <View
                         style={[
@@ -286,16 +287,16 @@ export default function VendorShiftScreen() {
                     <View style={styles.containDuration}>
                         <Text style={styles.durationText}>
                             Duration {" "}{currentShift?.start_shift && currentShift?.end_shift
-                                ? getDuration(currentShift.start_shift, currentShift.end_shift)
+                                ? getDuration(currentShift.start_shift, currentShift.end_shift, i18n.language)
                                 : "--"}
-                        </Text> 
+                        </Text>
 
                         <Text style={styles.progressText}>
                         {Math.round(progress)}% completed
                         </Text>
                     </View>
-                    
- 
+
+
                     <View style={styles.shiftDivider} />
 
                     <View style={styles.containCashButton}>
@@ -335,6 +336,7 @@ export default function VendorShiftScreen() {
 
                     <ScrollView
                         showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.historyContent}
                     >
                         {history.length === 0 ? (
 
@@ -346,43 +348,41 @@ export default function VendorShiftScreen() {
 
                         ) : (
 
-                            history.map((item, index) => (
+                            history.map((item) => (
 
                                 <View
                                     key={item.id}
-                                    style={[
-                                        styles.historyRow,
-                                        index !== history.length - 1 &&
-                                            styles.historyDivider,
-                                    ]}
+                                    style={styles.historyRow}
                                 >
-
-                                    <View style={styles.historyLeft}>
-
+                                    <View style={styles.historyCardTop}>
+                                        <View style={styles.historyDateGroup}>
+                                            <View style={styles.historyDateIcon}>
+                                                <Ionicons name="calendar-outline" size={17} color="#315B9B" />
+                                            </View>
                                         <Text style={styles.historyDate}>
-                                            {item.date}
+                                            {formatShiftDate(item.date, i18n.language)}
                                         </Text>
-
-                                        <Text style={styles.historyTime}>
-                                            {item.start} - {item.end}
-                                        </Text>
-
-                                    </View>
-
-                                    <View style={styles.historyRight}>
-
-                                        <Text style={styles.historyDuration}>
-                                            {item.duration}
-                                        </Text>
-
+                                        </View>
                                         <View style={styles.badge}>
                                             <Text style={styles.badgeText}>
                                                 {item.status}
                                             </Text>
                                         </View>
-
                                     </View>
 
+                                    <View style={styles.historyCardBottom}>
+                                        <View style={styles.historyTimeGroup}>
+                                            <Ionicons name="time-outline" size={16} color="#74839A" />
+                                            <Text style={styles.historyTime}>
+                                                {item.start} – {item.end}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.historyDuration}>
+                                            {item.start !== '--:--' && item.end !== '--:--'
+                                                ? getDuration(item.start, item.end, i18n.language)
+                                                : '--'}
+                                        </Text>
+                                    </View>
                                 </View>
 
                             ))
@@ -399,7 +399,7 @@ export default function VendorShiftScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#EEF2FF",
+        backgroundColor: "#FFFFFF",
     },
 
     container: {
@@ -426,13 +426,13 @@ const styles = StyleSheet.create({
         width: "100%",
         borderRadius: 24,
         padding: 20,
- 
+
         // iOS Shadow
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.12,
         shadowRadius: 6,
- 
+
         // Android Shadow
         elevation: 4,
     },
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
         color: "#C7D2FE",
         marginTop: 6,
     },
- 
+
     shiftDivider: {
         height: 1,
         backgroundColor: "rgba(255,255,255,0.18)",
@@ -528,12 +528,12 @@ const styles = StyleSheet.create({
     },
     containCashButton: {
     flexDirection: "row",
-    justifyContent: "space-between", 
+    justifyContent: "space-between",
     alignItems: "center",
     marginTop: 16,
 },
    cashStart: {
-        
+
     },
     cash: {
         fontSize: 30,
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
         color: "#C7D2FE",
     },
     containButton: {
-      
+
     },
     setShiftButton: {
         flexDirection: "row",
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         backgroundColor: "#FFFFFF",
         paddingVertical: 14,
-        paddingHorizontal: 18,            
+        paddingHorizontal: 18,
         borderRadius: 12,
     },
     setShiftText: {
@@ -573,72 +573,105 @@ const styles = StyleSheet.create({
         color: "#0F172A",
     },
     history: {
-    backgroundColor: "#FFFFFF",
     width: "100%",
     flex: 1,
+    minHeight: 240,
     marginBottom: 16,
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    borderRadius: 22,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    backgroundColor: "#F5F8FC",
+},
 
-    // iOS Shadow
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-
-    // Android Shadow
-    elevation: 4,
+historyContent: {
+    paddingBottom: 14,
 },
 
 historyRow: {
+    minHeight: 98,
+    justifyContent: "center",
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E7EDF5",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#17345C",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+},
+
+historyCardTop: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
+    justifyContent: "space-between",
 },
 
-historyDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-},
-
-historyLeft: {
+historyDateGroup: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 10,
 },
 
-historyRight: {
-    alignItems: "flex-end",
+historyDateIcon: {
+    width: 32,
+    height: 32,
+    marginRight: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EDF4FF",
+},
+
+historyCardBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#E9EEF5",
+},
+
+historyTimeGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
 },
 
 historyDate: {
-    fontSize: 16,
-    fontWeight: "600",
+    flexShrink: 1,
+    fontSize: 14,
+    fontWeight: "700",
     color: "#0F172A",
-    marginBottom: 4,
 },
 
 historyTime: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "500",
     color: "#64748B",
 },
 
 historyDuration: {
-    fontSize: 16,
+    marginLeft: 8,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 6,
+    color: "#335C91",
 },
 
 badge: {
-    backgroundColor: "#DCFCE7",
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
+    backgroundColor: "#EAF8F0",
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 999,
 },
 
 badgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#16A34A",
 },

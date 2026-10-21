@@ -32,8 +32,8 @@ export class ShiftController {
     @Query('period') period = 'today',
     @Query('search') search = '',
   ) {
-    if (period !== 'today' && period !== 'week' && period !== 'month') {
-      throw new BadRequestException('Period must be today, week, or month');
+    if (period !== 'today' && period !== 'week' && period !== 'month' && period !== 'all') {
+      throw new BadRequestException('Period must be today, week, month, or all');
     }
     return this.shiftService.getSalesHistory(req.user.userId, period, search);
   }
@@ -45,8 +45,8 @@ export class ShiftController {
     @Query('period') period = 'today',
     @Query('search') search = '',
   ) {
-    if (period !== 'today' && period !== 'week' && period !== 'month') {
-      throw new BadRequestException('Period must be today, week, or month');
+    if (period !== 'today' && period !== 'week' && period !== 'month' && period !== 'all') {
+      throw new BadRequestException('Period must be today, week, month, or all');
     }
     return this.shiftService.getClosedShiftHistory(req.user.userId, period, search);
   }

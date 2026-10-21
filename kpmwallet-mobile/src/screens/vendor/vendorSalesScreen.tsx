@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import {
   View,
-  Text,
+
   StyleSheet,
   ScrollView,
   Pressable,
@@ -10,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 
 type PaymentType = 'Cash' | 'QR';
@@ -130,6 +132,7 @@ export default function SalesScreen() {
 }
 
 function ActiveShiftSales({ sales }: { sales: CurrentShiftSales }) {
+  const { i18n } = useTranslation();
   const { total_sales: totalSales, transaction_count: transactionCount, cash_total: cashSales, qr_total: qrSales } = sales.summary;
   const transactions = sales.transactions;
 
@@ -149,10 +152,10 @@ function ActiveShiftSales({ sales }: { sales: CurrentShiftSales }) {
               color="#2563EB"
             />
 
-            <Text style={styles.cardLabel}>Total Sales</Text>
+            <Text style={[styles.cardLabel, styles.totalSalesLabel]}>Total Sales</Text>
           </View>
 
-          <Text style={styles.cardAmount}>
+          <Text style={[styles.cardAmount, styles.totalSalesAmount]}>
             RM {totalSales.toFixed(2)}
           </Text>
         </View>
@@ -278,7 +281,9 @@ function ActiveShiftSales({ sales }: { sales: CurrentShiftSales }) {
             </Text>
 
             <Text style={styles.transactionTime}>
-              {new Date(transaction.created_at).toLocaleString('en-MY')}
+              {new Date(transaction.created_at).toLocaleString(
+                i18n.language === 'ms' ? 'ms-MY' : 'en-MY',
+              )}
             </Text>
           </View>
         </View>
@@ -296,15 +301,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 18,
+    paddingTop: 16,
   },
 
   pageTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 24,
+    marginBottom: 20,
   },
 
   // Current Sales Header
@@ -371,17 +376,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
-    marginBottom: 28,
+    rowGap: 13,
+    marginBottom: 24,
   },
 
   summaryCard: {
     width: '48.2%',
-    minHeight: 112,
+    minHeight: 124,
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 18,
+    padding: 15,
     justifyContent: 'space-between',
+    shadowColor: '#1E3A5F',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.045,
+    shadowRadius: 9,
+    elevation: 2,
   },
 
   totalSalesCard: {
@@ -418,10 +428,19 @@ const styles = StyleSheet.create({
   },
 
   cardAmount: {
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: '700',
     color: '#0F172A',
     marginTop: 14,
+  },
+
+  totalSalesLabel: {
+    color: '#315B91',
+  },
+
+  totalSalesAmount: {
+    color: '#153D70',
+    fontSize: 23,
   },
 
   // Shift Transaction Header
@@ -434,7 +453,7 @@ const styles = StyleSheet.create({
   },
 
   transactionHeading: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#0F172A',
     flexShrink: 1,
@@ -455,13 +474,17 @@ const styles = StyleSheet.create({
 
   // Individual Transaction
   transactionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    gap: 12,
+    marginBottom: 11,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#E8EDF4',
+    borderRadius: 17,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#1E3A5F',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.045,
+    shadowRadius: 8,
+    elevation: 1,
   },
 
   transactionLeft: {
@@ -473,7 +496,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 8,
+    marginBottom: 7,
   },
 
   paymentRow: {
@@ -490,10 +513,11 @@ const styles = StyleSheet.create({
   },
 
   purchasedItems: {
-    marginBottom: 8,
-    color: '#64748B',
-    fontSize: 11,
-    lineHeight: 16,
+    marginTop: 11,
+    marginBottom: 12,
+    color: '#52627A',
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   successBadge: {
@@ -501,10 +525,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 4,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#EAF8F0',
     borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
 
   successText: {
@@ -517,6 +541,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'flex-end',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E8EDF4',
   },
 
   transactionId: {
@@ -536,7 +564,7 @@ const styles = StyleSheet.create({
 
   transactionTime: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#64748B',
     textAlign: 'right',
   },
 });

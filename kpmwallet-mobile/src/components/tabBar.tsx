@@ -1,7 +1,9 @@
 import React from 'react';
+import { LocalizedText as Text } from './LocalizedText';
+import { useTranslation } from 'react-i18next';
 import {
   View,
-  Text,
+
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
@@ -54,6 +56,7 @@ export default function TabBar({
   descriptors,
   navigation,
 }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const renderIcon = (
     tab: TabConfig,
     color: string,
@@ -93,7 +96,7 @@ export default function TabBar({
     const isActive = state.index === routeIndex;
 
     const color = isActive
-      ? '#7142f3'
+      ? '#0041C2'
       : '#A7A7AE';
 
     const { options } = descriptors[route.key];
@@ -146,7 +149,7 @@ export default function TabBar({
             isActive && styles.activeLabel,
           ]}
         >
-          {label}
+          {t(tab.name.toLowerCase(), { defaultValue: label })}
         </Text>
 
         {isActive && (
@@ -190,7 +193,7 @@ export default function TabBar({
       })}
 
       </View>
-      
+
     </View>
   );
 }
@@ -230,7 +233,7 @@ const styles = StyleSheet.create({
   },
 
   activeLabel: {
-    color: '#7142f3',
+    color: '#0041C2',
     fontWeight: '700',
   },
 
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 50,
-    backgroundColor: '#7142f3',
+    backgroundColor: '#0041C2',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -51,
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#7142f3',
+    backgroundColor: '#0041C2',
   },
 
 });

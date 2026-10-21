@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { LocalizedText as Text } from '../../components/LocalizedText';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors, radii, spacing, typography } from '../../theme';
@@ -16,7 +18,7 @@ export default function FirstTimeEmailScreen({
   const { nric, role } = route.params;
 
   const [email, setEmail] = React.useState('');
-  
+
 
   const handleContinue = async () => {
   if (!email.trim()) {
@@ -34,8 +36,19 @@ export default function FirstTimeEmailScreen({
     email: email.trim(),
     role
   });
-  } catch (error) {
+  } catch (error: any) {
     console.log('Send code error:', error);
+
+    const serverMessage = error?.response?.data?.message;
+    const message = Array.isArray(serverMessage) ? serverMessage[0] : serverMessage;
+
+    if (message === 'Email is already registered') {
+      Alert.alert(
+        'Email already registered',
+        'This email is already registered. Please use another email address.',
+      );
+      return;
+    }
 
     Alert.alert(
       'Server Problem',

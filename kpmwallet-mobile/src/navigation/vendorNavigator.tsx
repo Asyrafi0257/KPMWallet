@@ -46,7 +46,7 @@ function VendorTabs() {
 export default function VendorNavigator() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            
+
             <Stack.Screen
                 name="VendorTabs"
                 component={VendorTabs}
@@ -57,12 +57,12 @@ export default function VendorNavigator() {
                 component={VendorSetShiftScreen}
             />
 
-            <Stack.Screen 
+            <Stack.Screen
                 name="EditProfile"
                 component={VendorEditProfile}
             />
 
-            <Stack.Screen 
+            <Stack.Screen
                 name="ChangePassword"
                 component={VendorChangePassword}
             />

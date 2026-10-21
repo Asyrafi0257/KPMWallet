@@ -52,12 +52,22 @@ export class AuthService {
   }
 
   async sendRegistrationCode(email: string) {
+    const normalizedEmail = email.trim();
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = LOWER(:email)', { email: normalizedEmail })
+      .getOne();
+
+    if (existingUser) {
+      throw new BadRequestException('Email is already registered');
+    }
+
     const code = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
 
     await this.emailService.sendRegistrationCode(
-      email,
+      normalizedEmail,
       code,
     );
 

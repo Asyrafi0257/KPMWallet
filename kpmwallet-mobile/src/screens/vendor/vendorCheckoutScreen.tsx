@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -6,11 +7,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
+
+
   View,
-  Alert,
 } from 'react-native';
+import { LocalizedTextInput as TextInput } from '../../components/LocalizedTextInput';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -304,7 +306,7 @@ export default function VendorCheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F6F8FC' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   flex: { flex: 1 },
   header: { minHeight: 74, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EDF0F5' },
   backButton: { width: 40, height: 40, borderRadius: 13, backgroundColor: '#F1F4F8', alignItems: 'center', justifyContent: 'center' },
@@ -357,7 +359,7 @@ const styles = StyleSheet.create({
   successTitle: { marginTop: 22, color: '#1B2C48', fontSize: 21, fontWeight: '800', textAlign: 'center' },
   successCopy: { marginTop: 8, color: '#718099', fontSize: 14 },
   successChange: { marginTop: 10, color: '#269260', fontSize: 13, fontWeight: '700' },
-  receiptSafeArea: { flex: 1, backgroundColor: '#F3F6FB' },
+  receiptSafeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   receiptScroll: { flex: 1 },
   receiptPage: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20 },
   receiptFooter: { paddingHorizontal: 20, paddingTop: 11, paddingBottom: 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E9EDF3' },

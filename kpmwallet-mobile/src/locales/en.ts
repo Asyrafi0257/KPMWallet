@@ -19,6 +19,11 @@ const en = {
   startShift: 'Start Shift',
   closeShift: 'Close Shift',
   history: 'History',
+  logout: 'Logout',
+  today: 'Today',
+  thisWeek: 'This Week',
+  thisMonth: 'This Month',
+  all: 'All',
 };
 
 export default en;

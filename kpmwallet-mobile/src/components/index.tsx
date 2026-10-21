@@ -1,8 +1,10 @@
 import React from 'react';
+import { LocalizedText as Text } from './LocalizedText';
+import { useTranslation } from 'react-i18next';
 import {
   StyleSheet,
   View,
-  Text,
+
   TextInput,
   Pressable,
   ActivityIndicator,
@@ -30,6 +32,7 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
 }) => {
+  const { t } = useTranslation();
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -53,7 +56,7 @@ export const Button: React.FC<ButtonProps> = ({
             isDisabled && styles.disabledText,
           ]}
         >
-          {title}
+          {t(title, { defaultValue: title })}
         </Text>
       )}
     </Pressable>
@@ -74,6 +77,7 @@ export const Input: React.FC<InputProps> = ({
   inputStyle,
   ...textInputProps
 }) => {
+  const { t } = useTranslation();
   return (
     <View style={[styles.inputContainer, containerStyle]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
@@ -82,6 +86,9 @@ export const Input: React.FC<InputProps> = ({
           style={[styles.input, inputStyle]}
           placeholderTextColor={colors.gray400}
           {...textInputProps}
+          placeholder={textInputProps.placeholder
+            ? t(textInputProps.placeholder, { defaultValue: textInputProps.placeholder })
+            : undefined}
         />
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}

@@ -1,14 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import {
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
+
+
   View,
   Pressable,
   useWindowDimensions,
   Modal,
 } from 'react-native';
+import { LocalizedTextInput as TextInput } from '../../components/LocalizedTextInput';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -306,7 +308,7 @@ export default function VendorItemScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F6F8FC' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { paddingTop: 18, paddingBottom: 20 },
   topLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { color: '#152746', fontSize: 30, fontWeight: '800', letterSpacing: -0.7 },

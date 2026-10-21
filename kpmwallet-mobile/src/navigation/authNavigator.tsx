@@ -69,17 +69,17 @@ export default function AuthNavigator() {
         component={CreatePasswordScreen}
       />
 
-      <Stack.Screen 
+      <Stack.Screen
         name="ForgotPassword"
         component={ForgotPasswordScreen}
       />
 
-      <Stack.Screen 
+      <Stack.Screen
         name="Verification"
         component={VerificationScreen}
       />
 
-      <Stack.Screen 
+      <Stack.Screen
         name="ResetPassword"
         component={ResetPasswordScreen}
       />

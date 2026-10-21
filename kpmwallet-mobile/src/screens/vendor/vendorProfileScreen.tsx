@@ -1,21 +1,24 @@
 
+import { LocalizedText as Text } from '../../components/LocalizedText';
 import { Ionicons } from '@expo/vector-icons';
 import {
   StyleSheet,
   View,
-  Text,
+
   Pressable,
   ScrollView,
   useWindowDimensions,
   ActivityIndicator,
-  Alert,
   Image,
+  Modal,
 } from 'react-native';
+import { LocalizedAlert as Alert } from '../../components/LocalizedAlert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n from '../../i18n';
+import i18n, { changeAppLanguage } from '../../i18n';
 import api from '../../services/api';
 import { Button } from '../../components';
 import {
@@ -131,6 +134,7 @@ function MenuItem({
 }
 
 export default function Screen() {
+  const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
 
   const horizontalSpace = Math.min(width * 0.05, 20);
@@ -141,6 +145,7 @@ export default function Screen() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
   const navigation = useNavigation<NavigationProp>();
 
@@ -382,32 +387,75 @@ export default function Screen() {
                   { fontSize: Math.min(width * 0.06, 19) },
                 ]}
               >
-                Settings
+                {t('settings')}
               </Text>
 
               <View style={styles.menuGroup}>
                 <MenuItem
                   icon="language-outline"
-                  label="Language"
+                  label={t('language')}
                   value={
                     i18n.language === 'ms'
                       ? 'Bahasa Melayu'
                       : 'English'
                   }
-                  onPress={() => {}}
+                  onPress={() => setLanguageModalVisible(true)}
                 />
               </View>
             </View>
 
             {/* Logout */}
             <Button
-              title="Logout"
+              title={t('logout')}
               onPress={handleLogout}
               style={styles.btnLogout}
             />
           </View>
         </ScrollView>
       </SafeAreaView>
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <Pressable
+          style={styles.languageBackdrop}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <Pressable style={styles.languageModal} onPress={() => {}}>
+            <Text style={styles.languageModalTitle}>{t('chooseLanguage')}</Text>
+            <Text style={styles.languageModalSubtitle}>{t('selectLanguage')}</Text>
+            {(['en', 'ms'] as const).map((language) => (
+              <Pressable
+                key={language}
+                accessibilityRole="button"
+                style={[
+                  styles.languageOption,
+                  i18n.language === language && styles.languageOptionSelected,
+                ]}
+                onPress={async () => {
+                  await changeAppLanguage(language);
+                  setLanguageModalVisible(false);
+                }}
+              >
+                <Text style={styles.languageOptionText}>
+                  {language === 'en' ? t('english') : t('bahasaMelayu')}
+                </Text>
+                {i18n.language === language && (
+                  <Ionicons name="checkmark" size={20} color="#1565d8" />
+                )}
+              </Pressable>
+            ))}
+            <Pressable
+              style={styles.languageCancel}
+              onPress={() => setLanguageModalVisible(false)}
+            >
+              <Text style={styles.languageCancelText}>{t('cancel')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -415,7 +463,7 @@ export default function Screen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#1565d8',
+    backgroundColor: '#0041C2',
   },
 
   safe: {
@@ -578,5 +626,53 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#ff0b0b',
     marginVertical: 25,
+  },
+  languageBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+  },
+  languageModal: {
+    padding: 22,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  languageModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0f2a5c',
+  },
+  languageModalSubtitle: {
+    marginTop: 6,
+    marginBottom: 16,
+    color: '#64748b',
+  },
+  languageOption: {
+    minHeight: 52,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+  },
+  languageOptionSelected: {
+    backgroundColor: '#EEF5FF',
+  },
+  languageOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f2a5c',
+  },
+  languageCancel: {
+    minHeight: 46,
+    marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  languageCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1565d8',
   },
 });

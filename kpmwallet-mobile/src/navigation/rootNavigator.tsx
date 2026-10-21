@@ -32,7 +32,7 @@ export default function RootNavigator() {
           name="Vendor"
           component={VendorNavigator}
         />
-        
+
       </Stack.Navigator>
     </NavigationContainer>
   );

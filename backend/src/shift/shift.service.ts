@@ -125,7 +125,7 @@ async getCurrentShift(userId: number) {
 
   async getSalesHistory(
     userId: number,
-    period: 'today' | 'week' | 'month',
+    period: 'today' | 'week' | 'month' | 'all',
     search = '',
   ) {
     const now = new Date();
@@ -144,9 +144,12 @@ async getCurrentShift(userId: number) {
       .innerJoinAndSelect('sales.shift', 'shift')
       .innerJoin('shift.user', 'user')
       .where('user.user_id = :userId', { userId })
-      .andWhere('sales.created_at >= :from AND sales.created_at <= :to', { from, to: now })
       .orderBy('sales.sales_id', 'DESC')
       ;
+
+    if (period !== 'all') {
+      query.andWhere('sales.created_at >= :from AND sales.created_at <= :to', { from, to: now });
+    }
 
     const trimmedSearch = search.trim();
     if (trimmedSearch) {
@@ -190,7 +193,7 @@ async getCurrentShift(userId: number) {
 
   async getClosedShiftHistory(
     userId: number,
-    period: 'today' | 'week' | 'month',
+    period: 'today' | 'week' | 'month' | 'all',
     search = '',
   ) {
     const now = new Date();
@@ -208,9 +211,10 @@ async getCurrentShift(userId: number) {
       order: { shift_id: 'DESC' },
     });
     let shifts = allClosedShifts.filter((shift) => {
-      const activityDate = shift.closed_at ? new Date(shift.closed_at) : new Date(shift.date);
-      if (!shift.closed_at) activityDate.setHours(0, 0, 0, 0);
-      return activityDate >= from && activityDate <= now;
+      // Filter by the shift date shown in the list, not the time it was closed.
+      const activityDate = new Date(shift.date);
+      activityDate.setHours(0, 0, 0, 0);
+      return period === 'all' || (activityDate >= from && activityDate <= now);
     });
 
     const trimmedSearch = search.trim();
