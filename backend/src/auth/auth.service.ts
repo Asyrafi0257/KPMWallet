@@ -11,6 +11,12 @@ import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
+  private assertSupportedRole(role: string): void {
+    if (role !== 'Student' && role !== 'Vendor') {
+      throw new BadRequestException('Role must be Student or Vendor');
+    }
+  }
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -24,6 +30,7 @@ export class AuthService {
   ) {}
 
   async checkLogin(nric: string, role: string) {
+    this.assertSupportedRole(role);
     const user = await this.userRepository.findOne({
       where: { 
         nric,
@@ -81,6 +88,7 @@ export class AuthService {
     role: string,
     password: string,
   ) {
+    this.assertSupportedRole(role);
     const existingUser = await this.userRepository.findOne({
       where: { nric },
     });
@@ -108,6 +116,7 @@ export class AuthService {
   }
   
 async login(nric: string, role: string, password: string) {
+  this.assertSupportedRole(role);
   const user = await this.userRepository.findOne({
     where: { nric, role },
   });
@@ -146,7 +155,7 @@ async login(nric: string, role: string, password: string) {
     message: 'Login successful',
     access_token: accessToken,
     token_type: 'Bearer',
-    expires_in: 900,
+    expires_in: 3600,
     user: {
       user_id: user.user_id,
       nric: user.nric,
@@ -165,6 +174,7 @@ async forgotPassword(
   role: string,
   email: string,
 ) {
+  this.assertSupportedRole(role);
   // 1. Semak akaun user
   const user = await this.userRepository.findOne({
     where: { nric, role, email },
@@ -234,6 +244,7 @@ async verifyResetOtp(
   email: string,
   otp: string,
 ) {
+  this.assertSupportedRole(role);
   // 1. Cari user berdasarkan maklumat akaun
   const user = await this.userRepository.findOne({
     where: {
@@ -307,6 +318,7 @@ async resetPassword(
   otp: string,
   newPassword: string,
 ) {
+  this.assertSupportedRole(role);
   // 1. Cari akaun user
   const user = await this.userRepository.findOne({
     where: {

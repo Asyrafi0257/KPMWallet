@@ -30,11 +30,11 @@ type Props = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 
-const roles = ['School', 'Parent', 'Student', 'Vendor'] as const;
+const roles = ['Student', 'Vendor'] as const;
 type Role = (typeof roles)[number];
 
 export default function RoleSelectScreen({ navigation }: Props) {
-  const [selectedRole, setSelectedRole] = React.useState<Role>('Parent');
+  const [selectedRole, setSelectedRole] = React.useState<Role>('Student');
   const [nric, setNric] = React.useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -137,13 +137,6 @@ export default function RoleSelectScreen({ navigation }: Props) {
 
       // Navigate mengikut role
       switch (role) {
-        case 'School':
-          navigation.replace('School');
-          break;
-
-        case 'Parent':
-          navigation.replace('Parent');
-          break;
 
         case 'Student':
           navigation.replace('Student');

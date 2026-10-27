@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import AuthNavigator from './authNavigator';
 import VendorNavigator from './vendorNavigator';
+import StudentNavigator from './studentNavigator';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -31,6 +32,11 @@ export default function RootNavigator() {
         <Stack.Screen
           name="Vendor"
           component={VendorNavigator}
+        />
+
+        <Stack.Screen
+          name="Student"
+          component={StudentNavigator}
         />
 
       </Stack.Navigator>

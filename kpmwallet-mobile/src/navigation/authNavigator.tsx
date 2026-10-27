@@ -8,34 +8,36 @@ import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 import VerificationScreen from '../screens/auth/VerificationScreen';
 import ResetPasswordScreen from "../screens/auth/ResetPasswordScreen";
 
+export type AuthRole = 'Student' | 'Vendor';
+
 export type AuthStackParamList = {
   RoleSelect: undefined;
 
   FirstTimeEmail: {
-    role: 'School' | 'Parent' | 'Student' | 'Vendor',
+    role: AuthRole,
     nric: string;
   };
 
   CreatePassword: {
     nric: string;
     email: string;
-    role: 'School' | 'Parent' | 'Student' | 'Vendor',
+    role: AuthRole,
   };
 
   ForgotPassword: {
     nric:string,
-    role: 'School' | 'Parent' | 'Student' | 'Vendor',
+    role: AuthRole,
   }
 
   Verification:{
     nric:string,
-    role: 'School' | 'Parent' | 'Student' | 'Vendor',
+    role: AuthRole,
     email:string
   }
 
   ResetPassword: {
     nric:string,
-    role: 'School' | 'Parent' | 'Student' | 'Vendor',
+    role: AuthRole,
     email:string,
     otp:string
   }
