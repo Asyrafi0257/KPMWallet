@@ -20,6 +20,8 @@ const ms = {
   closeShift: 'Tutup Syif',
   history: 'Sejarah',
   logout: 'Log Keluar',
+  'Session expired': 'Sesi tamat tempoh',
+  'Your session has expired. Please log in again.': 'Sesi anda telah tamat tempoh. Sila log masuk semula.',
   today: 'Hari Ini',
   thisWeek: 'Minggu Ini',
   thisMonth: 'Bulan Ini',

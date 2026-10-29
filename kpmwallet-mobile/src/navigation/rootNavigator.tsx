@@ -1,13 +1,15 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, type NavigatorScreenParams } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import AuthNavigator from './authNavigator';
 import VendorNavigator from './vendorNavigator';
 import StudentNavigator from './studentNavigator';
+import navigationRef from './navigationRef';
+import type { AuthStackParamList } from './authNavigator';
 
 export type RootStackParamList = {
-  Auth: undefined;
+  Auth: NavigatorScreenParams<AuthStackParamList> | undefined;
   Vendor: undefined;
   Parent: undefined;
   Student: undefined;
@@ -18,7 +20,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

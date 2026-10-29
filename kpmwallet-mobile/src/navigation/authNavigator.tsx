@@ -7,10 +7,12 @@ import CreatePasswordScreen from '../screens/auth/CreatePasswordScreen';
 import ForgotPasswordScreen from "../screens/auth/ForgotPasswordScreen";
 import VerificationScreen from '../screens/auth/VerificationScreen';
 import ResetPasswordScreen from "../screens/auth/ResetPasswordScreen";
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 
 export type AuthRole = 'Student' | 'Vendor';
 
 export type AuthStackParamList = {
+  Welcome: undefined;
   RoleSelect: undefined;
 
   FirstTimeEmail: {
@@ -48,7 +50,7 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="RoleSelect"
+      initialRouteName="Welcome"
       screenOptions={{
         headerShown: false,
         contentStyle: {
@@ -56,6 +58,11 @@ export default function AuthNavigator() {
         },
       }}
     >
+      <Stack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+      />
+
       <Stack.Screen
         name="RoleSelect"
         component={RoleSelectScreen}

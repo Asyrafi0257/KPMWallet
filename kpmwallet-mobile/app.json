@@ -29,9 +29,12 @@
         {
           "photosPermission": false,
           "savePhotosPermission": "Allow KPMWallet to save your Digital ID to your photo gallery.",
-          "granularPermissions": ["photo"]
+          "granularPermissions": [
+            "photo"
+          ]
         }
-      ]
+      ],
+      "expo-status-bar"
     ]
   }
 }

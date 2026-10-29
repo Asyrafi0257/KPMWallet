@@ -11,6 +11,7 @@ import ChangePasswordScreen from '../screens/vendor/vendorChangePassword';
 import StudentParentProfileScreen from '../screens/student/studentParentProfileScreen';
 import StudentSchoolProfileScreen from '../screens/student/studentSchoolProfileScreen';
 import StudentDigitalIdScreen from '../screens/student/studentDigitalIdScreen';
+import StudentWalletScreen from '../screens/student/studentWalletScreen';
 
 export type StudentTabParamList = {
   Home: undefined;
@@ -30,15 +31,6 @@ export type StudentStackParamList = {
   ParentProfile: undefined;
   SchoolProfile: undefined;
 };
-
-function StudentPlaceholder({ title }: { title: string }) {
-  return (
-    <View style={styles.screen}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>Student {title.toLowerCase()} screen</Text>
-    </View>
-  );
-}
 
 function StudentTabs() {
   return (
@@ -66,7 +58,7 @@ function StudentTabs() {
       <Tab.Screen name="Home" component={StudentHomeScreen} />
       <Tab.Screen name="Transaction" component={StudentTransactionScreen} />
       <Tab.Screen name="DigitalID" component={StudentDigitalIdScreen} />
-      <Tab.Screen name="Wallet">{() => <StudentPlaceholder title="Wallet" />}</Tab.Screen>
+      <Tab.Screen name="Wallet" component={StudentWalletScreen} />
       <Tab.Screen name="Profile" component={StudentProfileScreen} />
     </Tab.Navigator>
   );
@@ -118,15 +110,6 @@ function StudentTransactionScreen() {
               <Text style={styles.transactionTitle}>Transactions</Text>
               <Text style={styles.transactionSubtitle}>View your payment history</Text>
             </View>
-            <Pressable
-              style={styles.printButton}
-              onPress={() => {}}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Print transactions"
-            >
-              <Ionicons name="print-outline" size={20} color="#0041C2" />
-            </Pressable>
           </View>
           <View style={styles.periodRow}>
             {periods.map((period) => {
@@ -384,19 +367,9 @@ const styles = StyleSheet.create({
   seeAllText: { color: '#0041C2', fontSize: 12, fontWeight: '700' },
   historyEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30, gap: 9 },
   historyEmptyText: { color: '#94A3B8', fontSize: 13 },
-  printButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
-    borderWidth: 1,
-    borderColor: '#DBE5FF',
-  },
   transactionTitle: {
     color: '#1A1A2E',
-    fontSize: 26,
+    fontSize: 30,
     fontWeight: '800',
     letterSpacing: -0.4,
   },

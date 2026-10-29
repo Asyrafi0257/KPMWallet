@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,21 +19,24 @@ type StudentProfile = {
   class_name?: string;
 };
 
-const qrPattern = [
-  '111111100101101111111', '100000101011001000001', '101110101101101011101', '101110100110001011101', '101110101001101011101', '100000101110001000001', '111111101010101111111',
-  '000000001101000000000', '110101111001111001011', '011001001110010110100', '101111110011011101101', '010010001101100010010', '111001110010111101100', '000000001011010000000',
-  '111111101100111010101', '100000100011010101010', '101110101110101110111', '101110100101001001001', '101110101011111101110', '100000101100010011001', '111111101011101110101',
-];
+const LATEST_WALLET_QR_KEY = 'latest_wallet_qr_value';
+const DEFAULT_WALLET_QR = 'KPMWALLET:AID';
 
-function QrPreview() {
+function QrPreview({ value }: { value: string }) {
+  const { modules } = QRCode.create(value, { errorCorrectionLevel: 'M' });
+  const matrixSize = modules.size;
+
   return (
     <View style={styles.qrFrame} accessibilityLabel="QR code preview">
       <View style={styles.qrGrid}>
-        {qrPattern.join('').split('').map((cell, index) => (
-          <View key={index} style={[styles.qrCell, cell === '1' && styles.qrCellOn]} />
+        {Array.from({ length: matrixSize }, (_, row) => (
+          <View key={row} style={styles.qrRow}>
+            {Array.from({ length: matrixSize }, (_, column) => (
+              <View key={column} style={[styles.qrCell, modules.data[row * matrixSize + column] === 1 && styles.qrCellOn]} />
+            ))}
+          </View>
         ))}
       </View>
-      <View style={styles.qrCenter}><Ionicons name="school" size={18} color="#FFFFFF" /></View>
     </View>
   );
 }
@@ -45,6 +48,7 @@ export default function StudentDigitalIdScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const [walletQrValue, setWalletQrValue] = useState(DEFAULT_WALLET_QR);
   const cardRef = useRef<View>(null);
   const [, requestMediaPermission] = MediaLibrary.usePermissions({ writeOnly: true, granularPermissions: ['photo'] });
 
@@ -52,6 +56,8 @@ export default function StudentDigitalIdScreen() {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
+      const latestWalletQr = await AsyncStorage.getItem(LATEST_WALLET_QR_KEY).catch(() => null);
+      setWalletQrValue(latestWalletQr || DEFAULT_WALLET_QR);
       const { data } = await api.get('/users/me');
       setProfile(data);
       const savedPhoto = data.user_id ? await AsyncStorage.getItem(`profile_image_uri_${data.user_id}`) : null;
@@ -107,8 +113,7 @@ export default function StudentDigitalIdScreen() {
         photoData = `data:${mimeType};base64,${base64}`;
       }
 
-      const qrPayload = JSON.stringify({ studentId, name: cardName, school: schoolName, className });
-      const qrCode = QRCode.create(qrPayload, { errorCorrectionLevel: 'H' });
+      const qrCode = QRCode.create(walletQrValue, { errorCorrectionLevel: 'M' });
       const qrSize = qrCode.modules.size;
       const qrPath = qrCode.modules.data.reduce((path, dark, index) => {
         if (!dark) return path;
@@ -164,7 +169,13 @@ export default function StudentDigitalIdScreen() {
         height: mm(297),
         margins: { top: 0, right: 0, bottom: 0, left: 0 },
       });
-      await Print.printAsync({ uri: result.uri, orientation: Print.Orientation.portrait });
+      try {
+        await Print.printAsync({ uri: result.uri, orientation: Print.Orientation.portrait });
+      } catch (error) {
+        // On iOS Expo Print rejects when the print sheet is dismissed without printing.
+        if (Platform.OS === 'ios') return;
+        throw error;
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
       if (!errorMessage.includes('cancel') && !errorMessage.includes('incomplete')) {
@@ -225,7 +236,7 @@ export default function StudentDigitalIdScreen() {
             </View>
 
             <View style={styles.qrSection}>
-              <QrPreview />
+              <QrPreview value={walletQrValue} />
               <Text style={styles.qrHint}>Scan to pay</Text>
             </View>
 
@@ -254,7 +265,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F4F6FB' },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 30 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
-  title: { color: '#17233F', fontSize: 29, fontWeight: '800', letterSpacing: -0.5 },
+  title: { color: '#17233F', fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { color: '#7D879B', fontSize: 13, marginTop: 4 },
   refreshButton: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8ECF4', alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
@@ -278,10 +289,10 @@ const styles = StyleSheet.create({
   identityValue: { color: '#26334D', fontSize: 16, fontWeight: '800', marginTop: 5, textAlign: 'center' },
   qrSection: { alignItems: 'center', paddingTop: 19, paddingBottom: 16 },
   qrFrame: { width: 224, height: 224, backgroundColor: '#FFFFFF', borderRadius: 17, borderWidth: 1, borderColor: '#E8ECF4', alignItems: 'center', justifyContent: 'center' },
-  qrGrid: { width: 197, height: 197, flexDirection: 'row', flexWrap: 'wrap', padding: 3, backgroundColor: '#FFFFFF' },
-  qrCell: { width: '4.76%', height: '4.76%', backgroundColor: '#FFFFFF' },
-  qrCellOn: { backgroundColor: '#1E2B45' },
-  qrCenter: { position: 'absolute', width: 30, height: 30, borderRadius: 9, backgroundColor: '#3159C9', borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  qrGrid: { width: 197, height: 197, padding: 3, backgroundColor: '#FFFFFF' },
+  qrRow: { flex: 1, flexDirection: 'row' },
+  qrCell: { flex: 1, backgroundColor: '#FFFFFF' },
+  qrCellOn: { backgroundColor: '#14233D' },
   qrHint: { color: '#66738A', fontSize: 11, fontWeight: '600', marginTop: 11 },
   detailLabel: { color: '#929BAD', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
   detailValue: { color: '#26334D', fontSize: 14, lineHeight: 19, fontWeight: '700', marginTop: 4, textAlign: 'center' },

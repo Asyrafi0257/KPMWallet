@@ -20,6 +20,8 @@ const en = {
   closeShift: 'Close Shift',
   history: 'History',
   logout: 'Logout',
+  'Session expired': 'Session expired',
+  'Your session has expired. Please log in again.': 'Your session has expired. Please log in again.',
   today: 'Today',
   thisWeek: 'This Week',
   thisMonth: 'This Month',
